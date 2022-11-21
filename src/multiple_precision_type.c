@@ -18,7 +18,7 @@ static void mpt_add_segments(mpt *mpt, const size_t segments_to_add) {
     }
 }
 
-static int mpt_prepare_for_bit_operation(mpt *mpt, const size_t bit, size_t *segment) {
+static int mpt_prepare_for_bit_operation(mpt *mpt, const size_t bit, size_t *segment, size_t *bit_pos) {
     size_t to_add;
 
     if (!mpt) {
@@ -26,7 +26,8 @@ static int mpt_prepare_for_bit_operation(mpt *mpt, const size_t bit, size_t *seg
     }
     
     *segment = bit / (sizeof(unsigned int) * 8);
-
+    *bit_pos  = bit % (sizeof(unsigned int) * 8);
+    
     if (*segment >= mpt->list->size) {
         to_add = *segment - mpt->list->size + 1;
         mpt_add_segments(mpt, to_add);
@@ -86,31 +87,30 @@ mpt *create_mpt() {
 }
 
 void mpt_set_bit(mpt *mpt, const size_t bit) {
-    size_t segment;
+    size_t segment, bit_pos;
 
-    if (mpt_prepare_for_bit_operation(mpt, bit, &segment)) {
-        mpt->list->values[segment] |= 1 << (bit % (sizeof(unsigned int) * 8));
+    if (mpt_prepare_for_bit_operation(mpt, bit, &segment, &bit_pos)) {
+        mpt->list->values[segment] |= (1 << bit_pos);
     }
 }
 
 void mpt_reset_bit(mpt *mpt, const size_t bit) {
-    size_t segment;
+    size_t segment, bit_pos;
 
-    if (mpt_prepare_for_bit_operation(mpt, bit, &segment)) {
-        mpt->list->values[segment] &= ~(1 << (bit % (sizeof(unsigned int) * 8)));
+    if (mpt_prepare_for_bit_operation(mpt, bit, &segment, &bit_pos)) {
+        mpt->list->values[segment] &= ~(1 << bit_pos);
     }
 }
 
 int mpt_get_bit(const mpt *mpt, const size_t bit) {
-    size_t index;
-    size_t bit_pos;
+    size_t segment, bit_pos;
 
     if (bit >= mpt->bits) {
         return mpt_get_msb(mpt);
     }
-    index = bit / (sizeof(unsigned int) * 8);
+    segment = bit / (sizeof(unsigned int) * 8);
     bit_pos = bit % (sizeof(unsigned int) * 8);
-    return (mpt->list->values[index] >> bit_pos) & 1;
+    return (mpt->list->values[segment] >> bit_pos) & 1;
 }
 
 mpt *mpt_negate(const mpt *mpt_a) {
