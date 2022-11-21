@@ -1,6 +1,24 @@
 #include <stdio.h>
 #include "array_list.h"
 
+static int list_increase_capacity(array_list *list) {
+    unsigned int *new_values;
+
+    if (!list) {
+        return 0;
+    }
+
+    list->capacity += SIZE_INCREMENT;
+    new_values = (unsigned int *)realloc(list->values, sizeof(unsigned int) * list->capacity);
+
+    if (!new_values) {
+        return 0;
+    }
+
+    list->values = new_values;
+    return 1;
+}
+
 array_list *create_list(const size_t init_capacity) {
     size_t i;
     array_list *list;
@@ -29,9 +47,7 @@ array_list *create_list(const size_t init_capacity) {
 }
 
 void list_add(array_list *list, const unsigned int value) {
-    size_t i;
     size_t new_size;
-    unsigned int *old_values;
 
     if (!list) {
         return;
@@ -40,15 +56,9 @@ void list_add(array_list *list, const unsigned int value) {
     new_size = list->size + 1;    
 
     if (new_size > list->capacity) {
-        list->capacity += SIZE_INCREMENT;
-        old_values = list->values;
-        list->values = (unsigned int *)malloc(sizeof(unsigned int) * list->capacity);
-        
-        for (i = 0; i < list->size; i++) {
-            list->values[i] = old_values[i];
+        if (!list_increase_capacity(list)) {
+            return;
         }
-
-        free(old_values);
     }
    
     list->values[list->size] = value;
