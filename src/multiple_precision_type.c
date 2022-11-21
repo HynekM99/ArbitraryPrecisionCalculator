@@ -227,6 +227,8 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
         cin = cout;
         if (bit) {
             mpt_set_bit(mpt, i);
+        } else {
+            mpt_reset_bit(mpt, i);
         }
     }
 
