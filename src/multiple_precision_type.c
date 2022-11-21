@@ -3,6 +3,70 @@
 #include "array_list.h"
 #include "multiple_precision_type.h"
 
+static void mpt_add_bits(mpt *mpt, const int bits_set) {
+    if (!mpt) {
+        return;
+    }
+
+    if (bits_set == 0) {
+        list_add(mpt->list, 0);
+    } else {
+        list_add(mpt->list, ~0);
+    }
+    mpt->bits += sizeof(unsigned int) * 8;
+}
+
+static size_t mpt_get_mssb_pos(const mpt *mpt) {
+    size_t i;
+    size_t bit_pos;
+
+    if (!mpt) {
+        return -1;
+    }
+
+    for (i = 0; i < mpt->bits; ++i) {
+        bit_pos = mpt->bits - i - 1;
+        if (mpt_get_bit(mpt, bit_pos)) {
+            return bit_pos;
+        }
+    }
+
+    return -1;
+}
+
+static int mpt_get_msb(const mpt *mpt) {
+    return mpt_get_bit(mpt, mpt->bits - 1);
+}
+
+static int init_mpt(mpt *mpt) {
+    if (!mpt) {
+        return 0;
+    }
+
+    mpt->list = create_list(10);
+    if (!mpt->list) {
+        return 0;
+    }
+
+    list_add(mpt->list, 0);
+    mpt->bits = sizeof(unsigned int) * 8;
+    return 1;
+}
+
+mpt *create_mpt() {
+    mpt *new = (mpt *)malloc(sizeof(mpt));
+    if (!new) {
+        return NULL;
+    }
+
+    if (!init_mpt(new)) {
+        mpt_free(&new);
+        return NULL;
+    }
+
+    return new;
+}
+
 void mpt_set_bit(mpt *mpt, const size_t bit) {
     size_t index;
     size_t to_add;
@@ -57,57 +121,6 @@ int mpt_get_bit(const mpt *mpt, const size_t bit) {
     index = bit / (sizeof(unsigned int) * 8);
     bit_pos = bit % (sizeof(unsigned int) * 8);
     return (mpt->list->values[index] >> bit_pos) & 1;
-}
-
-void mpt_add_bits(mpt *mpt, const int bits_set) {
-    if (!mpt) {
-        return;
-    }
-
-    if (bits_set == 0) {
-        list_add(mpt->list, 0);
-    } else {
-        list_add(mpt->list, ~0);
-    }
-    mpt->bits += sizeof(unsigned int) * 8;
-}
-
-mpt *create_mpt() {
-    array_list *list = NULL;
-    mpt *new = (mpt *)malloc(sizeof(mpt));
-    if (!new) {
-        return NULL;
-    }
-
-    list = create_list(10);
-    if (!list) {
-        free(new);
-        return NULL;
-    }
-
-    list_add(list, 0);
-
-    new->list = list;
-    new->bits = sizeof(unsigned int) * 8;
-    return new;
-}
-
-size_t mpt_get_mssb_pos(const mpt *mpt) {
-    size_t i;
-    size_t bit_pos;
-
-    if (!mpt) {
-        return -1;
-    }
-
-    for (i = 0; i < mpt->bits; ++i) {
-        bit_pos = mpt->bits - i - 1;
-        if (mpt_get_bit(mpt, bit_pos)) {
-            return bit_pos;
-        }
-    }
-
-    return -1;
 }
 
 int mpt_compare(const mpt *mpt_a, const mpt *mpt_b) {
@@ -237,10 +250,6 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
     }
 
     return mpt;
-}
-
-int mpt_get_msb(const mpt *mpt) {
-    return mpt_get_bit(mpt, mpt->bits - 1);
 }
 
 void mpt_print_bin(const mpt *mpt) {
