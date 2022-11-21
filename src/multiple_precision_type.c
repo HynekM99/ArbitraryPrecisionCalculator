@@ -113,6 +113,42 @@ int mpt_get_bit(const mpt *mpt, const size_t bit) {
     return (mpt->list->values[segment] >> bit_pos) & 1;
 }
 
+mpt *mpt_shift(const mpt *orig, const size_t positions, const int left) {
+    size_t i, j;
+    mpt *new = NULL;
+
+    if (!orig) {
+        return new;
+    }
+    if (positions <= 0) {
+        return orig;
+    }
+    
+    new = create_mpt();
+    if (!new) {
+        return NULL;
+    }
+
+    if (left) {
+        i = 0;
+        j = positions;
+    } else {
+        i = positions;
+        j = 0;
+    }
+
+    for (; i < orig->bits + (sizeof(unsigned int) * 8); ++i, ++j) {
+        if (mpt_get_bit(orig, i) == 1) {
+            mpt_set_bit(new, j);
+        } else {
+            mpt_reset_bit(new, j);
+        }
+    }
+
+    new->bits -= (sizeof(unsigned int) * 8);
+    return new;
+}
+
 mpt *mpt_negate(const mpt *mpt_a) {
     size_t i;
     mpt *new_tmp, *new, *one = NULL;

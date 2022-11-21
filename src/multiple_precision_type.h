@@ -18,6 +18,8 @@ void mpt_reset_bit(mpt *mpt, const size_t bit);
 
 int mpt_get_bit(const mpt *mpt, const size_t bit);
 
+mpt *mpt_shift(const mpt *mpt, const size_t positions, const int left);
+
 mpt *mpt_negate(const mpt *mpt_a);
 
 mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b);
