@@ -88,7 +88,7 @@ mpt *create_mpt() {
 void mpt_set_bit(mpt *mpt, const size_t bit) {
     size_t segment;
 
-    if (!mpt_prepare_for_bit_operation(mpt, bit, &segment)) {
+    if (mpt_prepare_for_bit_operation(mpt, bit, &segment)) {
         mpt->list->values[segment] |= 1 << (bit % (sizeof(unsigned int) * 8));
     }
 }
