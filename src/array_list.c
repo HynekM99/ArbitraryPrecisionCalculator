@@ -32,6 +32,8 @@ array_list *create_list(const size_t init_capacity) {
     init_values = (unsigned int *)malloc(sizeof(unsigned int) * init_capacity);
 
     if (!list || !init_values) {
+        free(list);
+        free(init_values);
         return NULL;
     }
 
