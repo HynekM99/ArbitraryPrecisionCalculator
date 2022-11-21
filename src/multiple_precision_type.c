@@ -113,51 +113,6 @@ int mpt_get_bit(const mpt *mpt, const size_t bit) {
     return (mpt->list->values[index] >> bit_pos) & 1;
 }
 
-int mpt_compare(const mpt *mpt_a, const mpt *mpt_b) {
-    size_t i;
-    int bit_a, bit_b, msb_a, msb_b;
-    size_t mssb_a;
-    size_t mssb_b;
-
-    if (!mpt_a || !mpt_b) {
-        return -2;
-    }
-
-    msb_a = mpt_get_msb(mpt_a);
-    msb_b = mpt_get_msb(mpt_b);
-
-    if (msb_a == 0 && msb_b == 1) {
-        return 1;
-    }
-    if (msb_a == 1 && msb_b == 0) {
-        return -1;
-    }
-
-    mssb_a = mpt_get_mssb_pos(mpt_a);
-    mssb_b = mpt_get_mssb_pos(mpt_b);
-
-    if (mssb_a > mssb_b) {
-        return 1;
-    }
-    if (mssb_a < mssb_b) {
-        return -1;
-    }
-
-    for (i = 0; i < mssb_a; ++i) {
-        bit_a = mpt_get_bit(mpt_a, mssb_a - i - 1);
-        bit_b = mpt_get_bit(mpt_b, mssb_a - i - 1);
-        
-        if (bit_a > bit_b) {
-            return 1;
-        }
-        if (bit_a < bit_b) {
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
 mpt *mpt_negate(const mpt *mpt_a) {
     size_t i;
     mpt *new_tmp, *new, *one = NULL;

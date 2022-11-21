@@ -22,8 +22,6 @@ mpt *mpt_negate(const mpt *mpt_a);
 
 mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b);
 
-int mpt_compare(const mpt *mpt_a, const mpt *mpt_b);
-
 void mpt_print_bin(const mpt *mpt);
 
 void mpt_free(mpt **mpt);

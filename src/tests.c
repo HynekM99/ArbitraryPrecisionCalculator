@@ -43,25 +43,6 @@ void test_negate(const mpt *mpt_a) {
     mpt_free(&mpt_res);
 }
 
-void test_compare(const mpt *mpt_a, const mpt *mpt_b) {
-    int cmp = mpt_compare(mpt_a, mpt_b);
-
-    if (cmp == -2) {
-        return;
-    }
-
-    mpt_print_bin(mpt_a);
-    switch (cmp)
-    {
-        case -1: printf(" < "); break;
-        case  1: printf(" > "); break;
-        case  0: printf(" = "); break;
-        default: break;
-    }
-    mpt_print_bin(mpt_b);
-    printf("\n");
-}
-
 void set_bits(mpt *mpt, int value) {
     size_t i;
 
@@ -94,7 +75,6 @@ int main() {
 
     test_add(mpt_a, mpt_b);
     test_negate(mpt_a);
-    test_compare(mpt_a, mpt_b);
 
     mpt_free(&mpt_a);
     mpt_free(&mpt_b);
