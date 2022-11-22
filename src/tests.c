@@ -85,19 +85,6 @@ void test_mul(const mpt *mpt_a, const mpt *mpt_b) {
     printf("\n");
 }
 
-void test_parse(const char *str) {
-    mpt *mpt_res = create_mpt();
-    
-    if (!mpt_parse_str(&mpt_res, str)) {
-        mpt_free(&mpt_res);
-        return;
-    }
-
-    mpt_print_bin(mpt_res);
-    mpt_free(&mpt_res);
-    printf("\n");
-}
-
 void set_bits(mpt *mpt, long value) {
     size_t i;
 
@@ -129,7 +116,6 @@ int main() {
     test_mul(mpt_a, mpt_b);
     test_negate(mpt_a);
     test_shift(mpt_a, 3, 1);
-    test_parse(str_a);
 
     mpt_free(&mpt_a);
     mpt_free(&mpt_b);
