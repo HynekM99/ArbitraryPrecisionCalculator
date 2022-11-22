@@ -103,7 +103,7 @@ void set_bits(mpt *mpt, long value) {
 }
 
 int main() {
-    char str_a[1000] = "200";
+    char str_a[1000] = "-8000000000000";
     char str_b[1000] = "-40";
     mpt *mpt_a = create_mpt();
     mpt *mpt_b = create_mpt();

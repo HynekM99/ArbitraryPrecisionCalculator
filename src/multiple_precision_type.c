@@ -230,7 +230,7 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
 }
 
 mpt *mpt_mul(const mpt *mpt_a, const mpt *mpt_b) {
-    size_t i;
+    size_t i, max_size;
     mpt *mpt, *mpt_tmp, *mpt_opt, *shifted = NULL;
     if (!mpt_a || !mpt_b) {
         return NULL;
@@ -241,7 +241,14 @@ mpt *mpt_mul(const mpt *mpt_a, const mpt *mpt_b) {
         return NULL;
     }
 
-    for (i = 0; i < mpt_b->bits * 2; ++i) {
+    if (mpt_a->bits >= mpt_b->bits) {
+        max_size = mpt_a->bits;
+    } else {
+        max_size = mpt_b->bits;
+    }
+    max_size *= 2;
+
+    for (i = 0; i < max_size; ++i) {
         if (mpt_get_bit(mpt_b, i) == 0) {
             continue;
         }
