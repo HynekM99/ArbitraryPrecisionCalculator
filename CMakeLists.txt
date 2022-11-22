@@ -15,6 +15,7 @@ add_executable(tests
     
     src/array_list.c
     src/multiple_precision_type.c
+    src/multiple_precision_parsing.c
 )
 
 target_link_libraries(main m)
