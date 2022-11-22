@@ -69,7 +69,22 @@ void test_shift(const mpt *mpt_a, const size_t positions, const int left) {
     mpt_free(&mpt_res_2);
 }
 
-void set_bits(mpt *mpt, int value) {
+void test_mul(const mpt *mpt_a, const mpt *mpt_b) {
+    mpt *mpt_res = mpt_mul(mpt_a, mpt_b);
+    if (!mpt_res) {
+        return;
+    }
+
+    mpt_print_bin(mpt_a);
+    printf(" * ");
+    mpt_print_bin(mpt_b);
+    printf(" = ");
+    mpt_print_bin(mpt_res);
+    mpt_free(&mpt_res);
+    printf("\n");
+}
+
+void set_bits(mpt *mpt, long value) {
     size_t i;
 
     if (!mpt) {
@@ -87,8 +102,8 @@ void set_bits(mpt *mpt, int value) {
 }
 
 int main() {
-    int value_a = 13;
-    int value_b = -19;
+    int value_a = 40;
+    int value_b = 20;
     mpt *mpt_a = create_mpt();
     mpt *mpt_b = create_mpt();
 
@@ -100,6 +115,7 @@ int main() {
     set_bits(mpt_b, value_b);
 
     test_add(mpt_a, mpt_b);
+    test_mul(mpt_a, mpt_b);
     test_negate(mpt_a);
     test_shift(mpt_a, 3, 1);
 

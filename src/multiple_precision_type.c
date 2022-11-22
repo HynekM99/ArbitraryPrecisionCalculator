@@ -120,9 +120,6 @@ mpt *mpt_shift(const mpt *orig, const size_t positions, const int left) {
     if (!orig) {
         return new;
     }
-    if (positions <= 0) {
-        return orig;
-    }
     
     new = create_mpt();
     if (!new) {
@@ -170,8 +167,7 @@ mpt *mpt_negate(const mpt *mpt_a) {
     for (i = 0; i < mpt_a->bits; ++i) {
         if (mpt_get_bit(mpt_a, i) == 1) {
             mpt_reset_bit(new_tmp, i);
-        }
-        else {
+        } else {
             mpt_set_bit(new_tmp, i);
         }
     }
@@ -189,8 +185,7 @@ mpt *mpt_negate(const mpt *mpt_a) {
 }
 
 mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
-    size_t i;
-    size_t max_size;
+    size_t i, max_size;
     int cin, cout = 0;
     int a, b, bit;
     mpt *mpt = NULL;
@@ -206,8 +201,7 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
 
     if (mpt_a->bits >= mpt_b->bits) {
         max_size = mpt_a->bits + sizeof(unsigned int) * 8;
-    }
-    else {
+    } else {
         max_size = mpt_b->bits + sizeof(unsigned int) * 8;
     }
 
@@ -231,6 +225,34 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
             mpt_reset_bit(mpt, i);
         }
     }
+
+    return mpt;
+}
+
+mpt *mpt_mul(const mpt *mpt_a, const mpt *mpt_b) {
+    size_t i;
+    mpt *mpt, *mpt_tmp, *shifted = NULL;
+    if (!mpt_a || !mpt_b) {
+        return NULL;
+    }
+
+    mpt = create_mpt();
+    if (!mpt) {
+        return NULL;
+    }
+
+    for (i = 0; i < mpt_b->bits + (sizeof(unsigned int) * 8); ++i) {
+        if (mpt_get_bit(mpt_b, i) == 0) {
+            continue;
+        }
+        shifted = mpt_shift(mpt_a, i, 1);
+        mpt_tmp = mpt_add(mpt, shifted);
+        mpt_free(&mpt);
+        mpt = mpt_tmp;
+        mpt_free(&shifted);
+    }
+
+    mpt->bits = mpt_a->bits + mpt_b->bits;
 
     return mpt;
 }
