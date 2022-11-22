@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "multiple_precision_type.h"
+#include "multiple_precision_parsing.h"
 
 void test_add(const mpt *mpt_a, const mpt *mpt_b) {
     mpt *mpt_res = mpt_add(mpt_a, mpt_b);
@@ -102,17 +103,14 @@ void set_bits(mpt *mpt, long value) {
 }
 
 int main() {
-    int value_a = 40;
-    int value_b = 20;
+    char str_a[1000] = "-8000000000000";
+    char str_b[1000] = "-40";
     mpt *mpt_a = create_mpt();
     mpt *mpt_b = create_mpt();
-
-    if (!mpt_a || !mpt_b) {
+    
+    if (!mpt_parse_str(&mpt_a, str_a) || !mpt_parse_str(&mpt_b, str_b)) {
         return EXIT_FAILURE;
     }
-
-    set_bits(mpt_a, value_a);
-    set_bits(mpt_b, value_b);
 
     test_add(mpt_a, mpt_b);
     test_mul(mpt_a, mpt_b);

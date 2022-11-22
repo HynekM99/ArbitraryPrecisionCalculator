@@ -26,6 +26,8 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b);
 
 mpt *mpt_mul(const mpt *mpt_a, const mpt *mpt_b);
 
+mpt *mpt_optimize(const mpt *orig);
+
 void mpt_print_bin(const mpt *mpt);
 
 void mpt_free(mpt **mpt);

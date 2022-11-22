@@ -115,14 +115,14 @@ int mpt_get_bit(const mpt *mpt, const size_t bit) {
 
 mpt *mpt_shift(const mpt *orig, const size_t positions, const int left) {
     size_t i, j;
-    mpt *new = NULL;
+    mpt *new, *new_tmp = NULL;
 
     if (!orig) {
-        return new;
+        return NULL;
     }
     
-    new = create_mpt();
-    if (!new) {
+    new_tmp = create_mpt();
+    if (!new_tmp) {
         return NULL;
     }
 
@@ -136,13 +136,15 @@ mpt *mpt_shift(const mpt *orig, const size_t positions, const int left) {
 
     for (; i < orig->bits + (sizeof(unsigned int) * 8); ++i, ++j) {
         if (mpt_get_bit(orig, i) == 1) {
-            mpt_set_bit(new, j);
+            mpt_set_bit(new_tmp, j);
         } else {
-            mpt_reset_bit(new, j);
+            mpt_reset_bit(new_tmp, j);
         }
     }
 
-    new->bits -= (sizeof(unsigned int) * 8);
+    new_tmp->bits -= (sizeof(unsigned int) * 8);
+    new = mpt_optimize(new_tmp);
+    mpt_free(&new_tmp);
     return new;
 }
 
@@ -177,10 +179,6 @@ mpt *mpt_negate(const mpt *mpt_a) {
     mpt_free(&new_tmp);
     mpt_free(&one);
 
-    if (!new) {
-        return NULL;
-    }
-
     return new;
 }
 
@@ -188,7 +186,7 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
     size_t i, max_size;
     int cin, cout = 0;
     int a, b, bit;
-    mpt *mpt = NULL;
+    mpt *mpt, *mpt_opt = NULL;
 
     if (!mpt_a || !mpt_b) {
         return NULL;
@@ -226,12 +224,14 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
         }
     }
 
-    return mpt;
+    mpt_opt = mpt_optimize(mpt);
+    mpt_free(&mpt);
+    return mpt_opt;
 }
 
 mpt *mpt_mul(const mpt *mpt_a, const mpt *mpt_b) {
-    size_t i;
-    mpt *mpt, *mpt_tmp, *shifted = NULL;
+    size_t i, max_size;
+    mpt *mpt, *mpt_tmp, *mpt_opt, *shifted = NULL;
     if (!mpt_a || !mpt_b) {
         return NULL;
     }
@@ -241,27 +241,81 @@ mpt *mpt_mul(const mpt *mpt_a, const mpt *mpt_b) {
         return NULL;
     }
 
-    for (i = 0; i < mpt_b->bits + (sizeof(unsigned int) * 8); ++i) {
+    if (mpt_a->bits >= mpt_b->bits) {
+        max_size = mpt_a->bits;
+    } else {
+        max_size = mpt_b->bits;
+    }
+    max_size *= 2;
+
+    for (i = 0; i < max_size; ++i) {
         if (mpt_get_bit(mpt_b, i) == 0) {
             continue;
         }
         shifted = mpt_shift(mpt_a, i, 1);
         mpt_tmp = mpt_add(mpt, shifted);
-        mpt_free(&mpt);
-        mpt = mpt_tmp;
         mpt_free(&shifted);
+        mpt_opt = mpt_optimize(mpt_tmp);
+        mpt_free(&mpt_tmp);
+        mpt_free(&mpt);
+        mpt = mpt_opt;
     }
 
     mpt->bits = mpt_a->bits + mpt_b->bits;
+    mpt_tmp = mpt_optimize(mpt);
+    mpt_free(&mpt);
+    return mpt_tmp;
+}
 
-    return mpt;
+mpt *mpt_optimize(const mpt *orig) {
+    unsigned int to_remove;
+    int msb;
+    size_t i, last_segment, bits;
+    mpt *opt = NULL;
+    if (!orig) {
+        return NULL;
+    }
+
+    opt = create_mpt();
+    if (!opt) {
+        return NULL;
+    }
+
+    msb = mpt_get_msb(orig);
+    to_remove = msb * ~0;
+
+    for (i = 0; i < orig->list->size; ++i) {
+        last_segment = orig->list->size - i - 1;
+        if (orig->list->values[last_segment] != to_remove) {
+            break;
+        }
+    }
+
+    for (i = 0; i < (last_segment + 1) * sizeof(unsigned int) * 8; ++i) {
+        if (mpt_get_bit(orig, i) == 1) {
+            mpt_set_bit(opt, i);
+        } else {
+            mpt_reset_bit(opt, i);
+        }
+    }
+
+    if (mpt_get_msb(opt) != msb) {
+        bits = opt->bits;
+        for (i = bits; i < bits + sizeof(unsigned int) * 8; ++i) {
+            if (msb) {
+                mpt_set_bit(opt, i);
+            } else {
+                mpt_reset_bit(opt, i);
+            }
+        }
+    }
+
+    return opt;
 }
 
 void mpt_print_bin(const mpt *mpt) {
     size_t i;
-    size_t bit;
     int msb;
-
     if (!mpt) {
         return;
     }
@@ -271,15 +325,13 @@ void mpt_print_bin(const mpt *mpt) {
     printf("0b%d", msb);
 
     for (i = 1; i < mpt->bits; ++i) {
-        bit = mpt->bits - i - 1;
-        if (mpt_get_bit(mpt, bit) != msb) {
+        if (mpt_get_bit(mpt, mpt->bits - i - 1) != msb) {
             break;
         }
     }
 
     for (; i < mpt->bits; ++i) {
-        bit = mpt->bits - i - 1;
-        printf("%i", mpt_get_bit(mpt, bit));
+        printf("%i", mpt_get_bit(mpt, mpt->bits - i - 1));
     }
 }
 
