@@ -71,5 +71,9 @@ int mpt_parse_str(mpt **target, const char *str) {
         *target = target_tmp_1;
     }
 
+  
+    mpt_free(&ten);
+    mpt_free(&mpt_c);
+
     return 1;
 }

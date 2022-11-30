@@ -143,6 +143,7 @@ mpt *mpt_shift(const mpt *orig, const size_t positions, const int left) {
     }
 
     new_tmp->bits -= (sizeof(unsigned int) * 8);
+    --new_tmp->list->size;
     new = mpt_optimize(new_tmp);
     mpt_free(&new_tmp);
     return new;
@@ -198,10 +199,11 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
     }
 
     if (mpt_a->bits >= mpt_b->bits) {
-        max_size = mpt_a->bits + sizeof(unsigned int) * 8;
+        max_size = mpt_a->bits;
     } else {
-        max_size = mpt_b->bits + sizeof(unsigned int) * 8;
+        max_size = mpt_b->bits;
     }
+    max_size += sizeof(unsigned int) * 8 * 2;
 
     a = mpt_get_bit(mpt_a, 0);
     b = mpt_get_bit(mpt_b, 0);
@@ -223,6 +225,9 @@ mpt *mpt_add(const mpt *mpt_a, const mpt *mpt_b) {
             mpt_reset_bit(mpt, i);
         }
     }
+
+    mpt->bits = max_size - sizeof(unsigned int) * 8;
+    --mpt->list->size;
 
     mpt_opt = mpt_optimize(mpt);
     mpt_free(&mpt);
@@ -255,16 +260,15 @@ mpt *mpt_mul(const mpt *mpt_a, const mpt *mpt_b) {
         shifted = mpt_shift(mpt_a, i, 1);
         mpt_tmp = mpt_add(mpt, shifted);
         mpt_free(&shifted);
-        mpt_opt = mpt_optimize(mpt_tmp);
-        mpt_free(&mpt_tmp);
         mpt_free(&mpt);
-        mpt = mpt_opt;
+        mpt = mpt_tmp;
     }
 
-    mpt->bits = mpt_a->bits + mpt_b->bits;
-    mpt_tmp = mpt_optimize(mpt);
-    mpt_free(&mpt);
-    return mpt_tmp;
+    if (mpt->bits > mpt_a->bits + mpt_b->bits) {
+        mpt->bits = mpt_a->bits + mpt_b->bits;
+    }
+    
+    return mpt;
 }
 
 mpt *mpt_optimize(const mpt *orig) {
