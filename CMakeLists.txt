@@ -6,14 +6,15 @@ set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -ansi")
 add_executable(main 
     src/main.c 
     
-    src/array_list.c
+    src/vector.c
     src/multiple_precision_type.c
+    src/multiple_precision_parsing.c
 )
 
 add_executable(tests
     src/tests.c 
     
-    src/array_list.c
+    src/vector.c
     src/multiple_precision_type.c
     src/multiple_precision_parsing.c
 )

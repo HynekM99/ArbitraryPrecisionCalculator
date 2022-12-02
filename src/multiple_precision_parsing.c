@@ -1,79 +1,126 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "multiple_precision_type.h"
 #include "multiple_precision_parsing.h"
 
-int mpt_parse_dec_char(mpt *target, const char c) {
+static int parse_bin_char_(const char c) {
+    if (c == '0' || c == '1') {
+        return c == '1';
+    }
+    return -1;
+}
+
+static int parse_dec_char_(const char c) {
+    if (c <= '9') {
+        return c - '0';
+    } 
+    return -1;
+}
+
+static int parse_hex_char_(const char c) {
+    if (c <= '9') {
+        return c - '0';
+    }
+    if (c <= 'F') {
+        return c - 'A' + 10;
+    }
+    if (c <= 'f') {
+        return c - 'a' + 10;
+    }
+    return -1;
+}
+
+int mpt_parse_char(mpt *target, const char c, const enum bases base) {
+    parse_char parser;
     char value;
     size_t i;
 
     if (!target) {
         return 0;
     }
-    if (c < '0' || c > '9') {
-        return 0;
+
+    switch (base) {
+        case bin: parser = parse_bin_char_; break;
+        case dec: parser = parse_dec_char_; break;
+        case hex: parser = parse_hex_char_; break;
+        default:  return 0;
     }
 
-    value = (char)(c - '0');
+    value = (char)parser(c);
 
     for (i = 0; i < sizeof(value) * 8; ++i) {
-        if (((value >> i) & 1) == 1) {
-            mpt_set_bit(target, i);
-        } else {
-            mpt_reset_bit(target, i);
+        if (!mpt_set_bit_to(target, i, ((value >> i) & 1) == 1)) {
+            return 0;
         }
     }
 
     return 1;
 }
 
-int mpt_parse_str(mpt **target, const char *str) {
-    int negative = 0;
+int mpt_parse_str(mpt **target, const char str[], const enum bases base) {
+    int success = 1, negative = 0;
+    char base_value = 0;
     size_t i = 0;
-    mpt *ten, *mpt_c, *target_tmp_1, *target_tmp_2 = NULL;
+    mpt *mpv_base, *mpv_char, *multiplied, *added, *negated;
+    mpv_base = mpv_char = multiplied = added = negated = NULL;
 
-    if (!target || !str || *str == '\000') {
+    if (!target || !str || str[0] == '\000') {
         return 0;
     }
 
-    ten = create_mpt();
-    mpt_c = create_mpt();
-    if (!ten || !mpt_c) {
-        mpt_free(&ten);
-        mpt_free(&mpt_c);
-        return 0;
-    }
-    mpt_set_bit(ten, 1);
-    mpt_set_bit(ten, 3);
-
-    if (*str == '-') {
-        i = 1;
-        negative = 1;
+    mpv_base = create_mpt();
+    mpv_char = create_mpt();
+    if (!mpv_base || !mpv_char) {
+        success = 0;
+        goto clean_and_exit;
     }
 
-    while (*(str + i) != '\000') {
-        if (!mpt_parse_dec_char(mpt_c, *(str + i))) {
-            mpt_free(&ten);
-            mpt_free(&mpt_c);
-            return 0;
+    base_value = (char)base;
+
+    for (i = 0; i < sizeof(base_value) * 8; ++i) {
+        if (!mpt_set_bit_to(mpv_base, i, ((base_value >> i) & 1) == 1)) {
+            success = 0;
+            goto clean_and_exit;
         }
-        target_tmp_1 = mpt_mul(*target, ten);
-        target_tmp_2 = mpt_add(target_tmp_1, mpt_c);
+    }
+
+    i = 0;
+
+    if (str[0] == '-') {
+        negative = 1;
+        i = 1;
+    }
+
+    for (; str[i] != '\000'; ++i) {
+        if (!mpt_parse_char(mpv_char, str[i], base)) {
+            success = 0;
+            goto clean_and_exit;
+        }
+
+        multiplied = mpt_mul(*target, mpv_base);
+        added = mpt_add(multiplied, mpv_char);
+        if (!added) {
+            success = 0;
+            goto clean_and_exit;
+        }
+        mpt_free(&multiplied);
         mpt_free(target);
-        mpt_free(&target_tmp_1);
-        *target = target_tmp_2;
-        ++i;
+        *target = added;
     }
 
     if (negative) {
-        target_tmp_1 = mpt_negate(*target);
+        negated = mpt_negate(*target);
+        if (!negated) {
+            success = 0;
+            goto clean_and_exit;
+        }
         mpt_free(target);
-        *target = target_tmp_1;
+        *target = negated;
     }
 
-  
-    mpt_free(&ten);
-    mpt_free(&mpt_c);
+  clean_and_exit:
+    mpt_free(&mpv_base);
+    mpt_free(&mpv_char);
+    mpt_free(&multiplied);
 
-    return 1;
+    return success;
 }

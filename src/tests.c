@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "multiple_precision_type.h"
 #include "multiple_precision_parsing.h"
 
 void test_add(const mpt *mpt_a, const mpt *mpt_b) {
@@ -85,39 +84,24 @@ void test_mul(const mpt *mpt_a, const mpt *mpt_b) {
     printf("\n");
 }
 
-void set_bits(mpt *mpt, long value) {
-    size_t i;
-
-    if (!mpt) {
-        return;
-    }
-
-    for (i = 0; i < sizeof(value) * 8; ++i) {
-        if (((value >> i) & 1) == 1) {
-            mpt_set_bit(mpt, i);
-        }
-        else {
-            mpt_reset_bit(mpt, i);
-        }
-    }
-}
-
 int main() {
-    char str_a[1000] = "-8000000000000";
-    char str_b[1000] = "-40";
+    int exit;
+    char str_a[1000] = "-100101";
+    char str_b[1000] = "-80";
     mpt *mpt_a = create_mpt();
     mpt *mpt_b = create_mpt();
-    
-    if (!mpt_parse_str(&mpt_a, str_a) || !mpt_parse_str(&mpt_b, str_b)) {
-        return EXIT_FAILURE;
+
+    if (!mpt_parse_str(&mpt_a, str_a, bin) || !mpt_parse_str(&mpt_b, str_b, hex)) {
+        exit = EXIT_FAILURE;
+        goto clean_and_exit;
     }
 
-    test_add(mpt_a, mpt_b);
     test_mul(mpt_a, mpt_b);
-    test_negate(mpt_a);
-    test_shift(mpt_a, 3, 1);
 
+    exit = EXIT_SUCCESS;
+
+  clean_and_exit:
     mpt_free(&mpt_a);
     mpt_free(&mpt_b);
-    return EXIT_SUCCESS;
+    return exit;
 }
