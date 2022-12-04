@@ -27,6 +27,7 @@ void test_add_1(char test_name[]) {
 
     mpv_test_res = mpt_add(mpv_a, mpv_b);
     if (!mpv_test_res) {
+        printf("%s ... Failed!", test_name);
         goto clean_and_exit;
     }
 
@@ -55,6 +56,7 @@ void test_add_2(char test_name[]) {
 
     mpv_test_res = mpt_add(mpv_a, mpv_b);
     if (!mpv_test_res) {
+        printf("%s ... Failed!", test_name);
         goto clean_and_exit;
     }
 
@@ -63,6 +65,85 @@ void test_add_2(char test_name[]) {
   clean_and_exit:
     mpt_free(&mpv_a);
     mpt_free(&mpv_b);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
+}
+
+void test_pow_1(char test_name[]) {
+    char value_base[100] =  "2";
+    char value_exp[100] =  "64";
+    char true_res[100] =  "10000000000000000000000000000000000000000000000000000000000000000";
+    mpt *mpv_base, *mpv_exp, *mpv_test_res, *mpv_true_res;
+    mpv_base = mpv_exp = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_base = create_mpt(0);
+    mpt_parse_str(&mpv_base, value_base, dec);
+    mpv_exp = create_mpt(0);
+    mpt_parse_str(&mpv_exp, value_exp, dec);
+    mpv_true_res = create_mpt(0);
+    mpt_parse_str(&mpv_true_res, true_res, bin);
+
+    mpv_test_res = mpt_pow(mpv_base, mpv_exp);
+    if (!mpv_test_res) {
+        printf("%s ... Failed!\n", test_name);
+        goto clean_and_exit;
+    }
+
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+  clean_and_exit:
+    mpt_free(&mpv_base);
+    mpt_free(&mpv_exp);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
+}
+
+void test_pow_2(char test_name[]) {
+    char value_base[100] =  "-2";
+    char value_exp[100] =  "31";
+    char true_res[100] =  "-2147483648";
+    mpt *mpv_base, *mpv_exp, *mpv_test_res, *mpv_true_res;
+    mpv_base = mpv_exp = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_base = create_mpt(0);
+    mpt_parse_str(&mpv_base, value_base, dec);
+    mpv_exp = create_mpt(0);
+    mpt_parse_str(&mpv_exp, value_exp, dec);
+    mpv_true_res = create_mpt(0);
+    mpt_parse_str(&mpv_true_res, true_res, dec);
+
+    mpv_test_res = mpt_pow(mpv_base, mpv_exp);
+    if (!mpv_test_res) {
+        printf("%s ... Failed!\n", test_name);
+        goto clean_and_exit;
+    }
+
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+  clean_and_exit:
+    mpt_free(&mpv_base);
+    mpt_free(&mpv_exp);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
+}
+
+void test_pow_3(char test_name[]) {
+    char value_base[100] =  "2";
+    char value_exp[100] =  "-8";
+    mpt *mpv_base, *mpv_exp, *mpv_test_res, *mpv_true_res;
+    mpv_base = mpv_exp = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_base = create_mpt(0);
+    mpt_parse_str(&mpv_base, value_base, dec);
+    mpv_exp = create_mpt(0);
+    mpt_parse_str(&mpv_exp, value_exp, dec);
+    mpv_true_res = create_mpt(0);
+
+    mpv_test_res = mpt_pow(mpv_base, mpv_exp);
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+    mpt_free(&mpv_base);
+    mpt_free(&mpv_exp);
     mpt_free(&mpv_test_res);
     mpt_free(&mpv_true_res);
 }
@@ -124,27 +205,14 @@ void test_factorial_3(char test_name[]) {
 }
 
 int main() {
-    int exit;
-    char str_a[1000] = "1000";
-    char str_b[1000] = "40";
-    mpt *mpt_a = create_mpt(0);
-    mpt *mpt_b = create_mpt(0);
-
-    if (!mpt_parse_str(&mpt_a, str_a, dec) || !mpt_parse_str(&mpt_b, str_b, hex)) {
-        exit = EXIT_FAILURE;
-        goto clean_and_exit;
-    }
-
     test_add_1("Add test 1");
     test_add_2("Add test 2");
+    test_pow_1("Power test 1");
+    test_pow_2("Power test 2");
+    test_pow_3("Power test 3");
     test_factorial_1("Factorial test 1");
     test_factorial_2("Factorial test 2");
     test_factorial_3("Factorial test 3");
 
-    exit = EXIT_SUCCESS;
-
-  clean_and_exit:
-    mpt_free(&mpt_a);
-    mpt_free(&mpt_b);
-    return exit;
+    return EXIT_SUCCESS;
 }

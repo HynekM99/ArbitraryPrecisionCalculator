@@ -33,6 +33,8 @@ mpt *mpt_sub(const mpt *mpv_a, const mpt *mpv_b);
 
 mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b);
 
+mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent);
+
 mpt *mpt_factorial(const mpt *mpv);
 
 mpt *mpt_optimize(const mpt *orig);
