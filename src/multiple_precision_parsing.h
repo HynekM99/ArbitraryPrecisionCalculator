@@ -3,9 +3,9 @@
 
 #include "multiple_precision_type.h"
 
-typedef int (*parse_char)(char);
+typedef int (*char_parser)(char);
 
-int mpt_parse_char(mpt *target, const char c, const enum bases base);
+int parse_char(const char c, const enum bases base);
 
 int mpt_parse_str(mpt **target, const char *str, const enum bases base);
 

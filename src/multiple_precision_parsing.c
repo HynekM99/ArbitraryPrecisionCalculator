@@ -29,36 +29,21 @@ static int parse_hex_char_(const char c) {
     return -1;
 }
 
-int mpt_parse_char(mpt *target, const char c, const enum bases base) {
-    parse_char parser;
-    char value;
-    size_t i;
-
-    if (!target) {
-        return 0;
-    }
+int parse_char(const char c, const enum bases base) {
+    char_parser parser;
 
     switch (base) {
         case bin: parser = parse_bin_char_; break;
         case dec: parser = parse_dec_char_; break;
         case hex: parser = parse_hex_char_; break;
-        default:  return 0;
+        default:  return -1;
     }
 
-    value = (char)parser(c);
-
-    for (i = 0; i < sizeof(value) * 8; ++i) {
-        if (!mpt_set_bit_to(target, i, ((value >> i) & 1) == 1)) {
-            return 0;
-        }
-    }
-
-    return 1;
+    return parser(c);
 }
 
 int mpt_parse_str(mpt **target, const char str[], const enum bases base) {
-    int success = 1, negative = 0;
-    char base_value = 0;
+    int success = 1, negative = 0, char_value = 0;
     size_t i = 0;
     mpt *mpv_base, *mpv_char, *multiplied, *added, *negated;
     mpv_base = mpv_char = multiplied = added = negated = NULL;
@@ -67,23 +52,11 @@ int mpt_parse_str(mpt **target, const char str[], const enum bases base) {
         return 0;
     }
 
-    mpv_base = create_mpt();
-    mpv_char = create_mpt();
-    if (!mpv_base || !mpv_char) {
+    mpv_base = create_mpt((long)base);
+    if (!mpv_base) {
         success = 0;
         goto clean_and_exit;
     }
-
-    base_value = (char)base;
-
-    for (i = 0; i < sizeof(base_value) * 8; ++i) {
-        if (!mpt_set_bit_to(mpv_base, i, ((base_value >> i) & 1) == 1)) {
-            success = 0;
-            goto clean_and_exit;
-        }
-    }
-
-    i = 0;
 
     if (str[0] == '-') {
         negative = 1;
@@ -91,7 +64,9 @@ int mpt_parse_str(mpt **target, const char str[], const enum bases base) {
     }
 
     for (; str[i] != '\000'; ++i) {
-        if (!mpt_parse_char(mpv_char, str[i], base)) {
+        char_value = parse_char(str[i], base);
+        mpv_char = create_mpt(char_value);
+        if (!mpv_char) {
             success = 0;
             goto clean_and_exit;
         }
@@ -102,6 +77,7 @@ int mpt_parse_str(mpt **target, const char str[], const enum bases base) {
             success = 0;
             goto clean_and_exit;
         }
+        mpt_free(&mpv_char);
         mpt_free(&multiplied);
         mpt_free(target);
         *target = added;

@@ -2,101 +2,144 @@
 #include <stdlib.h>
 #include "multiple_precision_parsing.h"
 
-void test_add(const mpt *mpt_a, const mpt *mpt_b) {
-    mpt *mpt_res = mpt_add(mpt_a, mpt_b);
-    if (!mpt_res) {
-        return;
+int assert_equals(const char test_name[], const mpt *mpv_test_res, const mpt *mpv_true_res) {
+    if (mpt_compare(mpv_test_res, mpv_true_res) == 0) {
+        printf("%s ... OK\n", test_name);
+        return 1;
+    }
+    printf("%s ... Failed!\n", test_name);
+    return 0;
+} 
+
+void test_add_1(char test_name[]) {
+    char value_a[100] =  "100000000000";
+    char value_b[100] =   "25000000001";
+    char true_res[100] = "125000000001";
+    mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
+    mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_a = create_mpt(0);
+    mpt_parse_str(&mpv_a, value_a, dec);
+    mpv_b = create_mpt(0);
+    mpt_parse_str(&mpv_b, value_b, dec);
+    mpv_true_res = create_mpt(0);
+    mpt_parse_str(&mpv_true_res, true_res, dec);
+
+    mpv_test_res = mpt_add(mpv_a, mpv_b);
+    if (!mpv_test_res) {
+        goto clean_and_exit;
     }
 
-    mpt_print_bin(mpt_a);
-    printf(" + ");
-    mpt_print_bin(mpt_b);
-    printf(" = ");
-    mpt_print_bin(mpt_res);
-    mpt_free(&mpt_res);
-    printf("\n");
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+  clean_and_exit:
+    mpt_free(&mpv_a);
+    mpt_free(&mpv_b);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
 }
 
-void test_negate(const mpt *mpt_a) {
-    mpt *mpt_res = mpt_negate(mpt_a);
-    if (!mpt_res) {
-        return;
+void test_add_2(char test_name[]) {
+    char value_a[100] =  "100000000000";
+    char value_b[100] =  "-25000000001";
+    char true_res[100] =  "74999999999";
+    mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
+    mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_a = create_mpt(0);
+    mpt_parse_str(&mpv_a, value_a, dec);
+    mpv_b = create_mpt(0);
+    mpt_parse_str(&mpv_b, value_b, dec);
+    mpv_true_res = create_mpt(0);
+    mpt_parse_str(&mpv_true_res, true_res, dec);
+
+    mpv_test_res = mpt_add(mpv_a, mpv_b);
+    if (!mpv_test_res) {
+        goto clean_and_exit;
     }
 
-    printf("-");
-    mpt_print_bin(mpt_a);
-    printf(" = ");
-    mpt_print_bin(mpt_res);
-    printf("\n");
-    mpt_free(&mpt_res);
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+  clean_and_exit:
+    mpt_free(&mpv_a);
+    mpt_free(&mpv_b);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
 }
 
-void test_shift(const mpt *mpt_a, const size_t positions, const int left) {
-    mpt *mpt_res_1 = mpt_shift(mpt_a, positions, left);
-    mpt *mpt_res_2;
-    if (!mpt_res_1) {
+void test_factorial_1(char test_name[]) {
+    char true_res[329] = "0101000000011101001011101011010011000100111001100000110111011000001011100010010100000011100000110001111010010111101100001000110010001101101011010100010111001001011001100111111100110000100110000011011011100000000000000110101101101110011110001100011011010011010101000000000000000000000000000000000000000000000000000000000000000000";
+    mpt *mpv, *mpv_test_res, *mpv_true_res;
+    mpv = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_true_res = create_mpt(0);
+    if (!mpt_parse_str(&mpv_true_res, true_res, bin)) {
         return;
     }
 
-    mpt_res_2 = mpt_shift(mpt_res_1, positions, !left);
-    if (!mpt_res_2) {
-        mpt_free(&mpt_res_1);
+    mpv = create_mpt(69);
+    mpv_test_res = mpt_factorial(mpv);
+
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+    mpt_free(&mpv);
+    mpt_free(&mpv_true_res);
+    mpt_free(&mpv_test_res);
+}
+
+void test_factorial_2(char test_name[]) {
+    mpt *mpv, *mpv_test_res, *mpv_true_res;
+    mpv = mpv_test_res = mpv_true_res = NULL;
+
+    mpv = create_mpt(-1);
+    if (!mpv) {
         return;
     }
+    mpv_test_res = mpt_factorial(mpv);
 
-    mpt_print_bin(mpt_a);
-    if (left) {
-        printf(" << %li", positions);
-    }
-    else {
-        printf(" >> %li", positions);
-    }
-    printf(" = ");
-    mpt_print_bin(mpt_res_1);
-    printf("\n");
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
     
-    mpt_print_bin(mpt_res_1);
-    if (!left) {
-        printf(" << %li", positions);
-    }
-    else {
-        printf(" >> %li", positions);
-    }
-    printf(" = ");
-    mpt_print_bin(mpt_res_2);
-    printf("\n");
-    mpt_free(&mpt_res_1);
-    mpt_free(&mpt_res_2);
+    mpt_free(&mpv);
+    mpt_free(&mpv_true_res);
+    mpt_free(&mpv_test_res);
 }
 
-void test_mul(const mpt *mpt_a, const mpt *mpt_b) {
-    mpt *mpt_res = mpt_mul(mpt_a, mpt_b);
-    if (!mpt_res) {
-        return;
-    }
+void test_factorial_3(char test_name[]) {
+    mpt *mpv, *mpv_test_res, *mpv_true_res;
+    mpv = mpv_test_res = mpv_true_res = NULL;
 
-    mpt_print_bin(mpt_a);
-    printf(" * ");
-    mpt_print_bin(mpt_b);
-    printf(" = ");
-    mpt_print_bin(mpt_res);
-    mpt_free(&mpt_res);
-    printf("\n");
+    mpv = create_mpt(0);
+    mpv_true_res = create_mpt(1);
+    if (!mpv || !mpv_true_res) {
+        goto clean_and_exit;
+    }
+    mpv_test_res = mpt_factorial(mpv);
+
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+    
+  clean_and_exit:
+    mpt_free(&mpv);
+    mpt_free(&mpv_true_res);
+    mpt_free(&mpv_test_res);
 }
 
 int main() {
     int exit;
-    char str_a[1000] = "-100101";
-    char str_b[1000] = "-80";
-    mpt *mpt_a = create_mpt();
-    mpt *mpt_b = create_mpt();
+    char str_a[1000] = "1000";
+    char str_b[1000] = "40";
+    mpt *mpt_a = create_mpt(0);
+    mpt *mpt_b = create_mpt(0);
 
-    if (!mpt_parse_str(&mpt_a, str_a, bin) || !mpt_parse_str(&mpt_b, str_b, hex)) {
+    if (!mpt_parse_str(&mpt_a, str_a, dec) || !mpt_parse_str(&mpt_b, str_b, hex)) {
         exit = EXIT_FAILURE;
         goto clean_and_exit;
     }
 
-    test_mul(mpt_a, mpt_b);
+    test_add_1("Add test 1");
+    test_add_2("Add test 2");
+    test_factorial_1("Factorial test 1");
+    test_factorial_2("Factorial test 2");
+    test_factorial_3("Factorial test 3");
 
     exit = EXIT_SUCCESS;
 

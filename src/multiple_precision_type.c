@@ -37,18 +37,43 @@ static int mpt_get_msb_(const mpt *mpv) {
     return mpt_get_bit(mpv, mpt_bit_count(mpv) - 1);
 }
 
-static int init_mpt_(mpt *mpv) {
+static int mpt_is_zero_(const mpt *mpv) {
+    size_t i;
+    if (mpt_get_msb_(mpv) == 1) {
+        return 0;
+    }
+    for (i = 0; i < mpt_bit_count(mpv); ++i) {
+        if (mpt_get_bit(mpv, i) == 1) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static int mpt_is_negative_(const mpt *mpv) {
+    return mpt_get_msb_(mpv) == 1;
+}
+
+static int init_mpt_(mpt *mpv, const char init_value) {
     char def = 0;
+    size_t i;
     if (!mpv) {
         return 0;
     }
-    
+
+    vector_deallocate(&(mpv->list));
     mpv->list = vector_allocate(sizeof(char), NULL);
     if (!mpv->list) {
         return 0;
     }
 
     vector_push_back(mpv->list, &def);
+
+    for (i = 0; i < sizeof(init_value) * 8; ++i) {
+        if (!mpt_set_bit_to(mpv, i, ((init_value >> i) & 1) == 1)) {
+            return 0;
+        }
+    }
 
     return 1;
 }
@@ -71,12 +96,38 @@ static size_t mpt_bit_pos_in_segment_(const mpt *mpv, const size_t bit) {
     return bit % (mpv->list->item_size * 8);
 }
 
-mpt *create_mpt() {
+mpt *create_mpt(const char init_value) {
     mpt *new = (mpt *)malloc(sizeof(mpt));
-
-    if (!new || !init_mpt_(new)) {
-        mpt_free(&new);
+    if (!new) {
         return NULL;
+    }
+
+    new->list = NULL;
+
+    if (!init_mpt_(new, init_value)) {
+        mpt_free(&new);
+    }
+
+    return new;
+}
+
+mpt *copy_mpt(const mpt *orig) {
+    size_t i;
+    mpt *new = NULL;
+    if (!orig) {
+        return NULL;
+    }
+
+    new = create_mpt(0);
+    if (!new) {
+        return NULL;
+    }
+
+    for (i = 0; i < mpt_bit_count(orig); ++i) {
+        if (!mpt_set_bit_to(new, i, mpt_get_bit(orig, i))) {
+            mpt_free(&new);
+            return NULL;
+        }
     }
 
     return new;
@@ -128,6 +179,64 @@ int mpt_get_bit(const mpt *mpv, const size_t bit) {
     return (*segment >> bit_pos) & 1;
 }
 
+int mpt_compare(const mpt *mpv_a, const mpt *mpv_b) {
+    size_t mssb_pos_a, mssb_pos_b, i;
+    int bit_a, bit_b;
+    if (!mpv_a && !mpv_b) {
+        return 0;
+    }
+    if (!mpv_a) {
+        return -1;
+    }
+    if (!mpv_b) {
+        return 1;
+    }
+
+    if (mpt_signum(mpv_a) == 0 && mpt_signum(mpv_b) == 0) {
+        return 0;
+    }
+    if (mpt_signum(mpv_a) > mpt_signum(mpv_b)) {
+        return 1;
+    }
+    if (mpt_signum(mpv_a) < mpt_signum(mpv_b)) {
+        return -1;
+    }
+    
+    mssb_pos_a = mpt_get_mssb_pos_(mpv_a);
+    mssb_pos_b = mpt_get_mssb_pos_(mpv_b);
+
+    if (mssb_pos_a > mssb_pos_b) {
+        return 1;
+    }
+    if (mssb_pos_a < mssb_pos_b) {
+        return -1;
+    }
+
+    for (i = 0; i < mssb_pos_a; ++i) {
+        bit_a = mpt_get_bit(mpv_a, mssb_pos_a - i - 1);
+        bit_b = mpt_get_bit(mpv_b, mssb_pos_a - i - 1);
+        
+        if (bit_a > bit_b) {
+            return 1;
+        }
+        if (bit_a < bit_b) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int mpt_signum(const mpt *mpv) {
+    if (!mpv) {
+        return 0;
+    }
+    if (mpt_get_msb_(mpv) == 1) {
+        return -1;
+    }
+    return !mpt_is_zero_(mpv);
+}
+
 mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
     size_t i, j;
     mpt *new = NULL, *new_tmp = NULL;
@@ -135,7 +244,7 @@ mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
         return NULL;
     }
     
-    new_tmp = create_mpt();
+    new_tmp = create_mpt(0);
     if (!new_tmp) {
         return NULL;
     }
@@ -171,8 +280,8 @@ mpt *mpt_negate(const mpt *mpv) {
         return NULL;
     }
 
-    one = create_mpt();
-    new_tmp = create_mpt();
+    one = create_mpt(1);
+    new_tmp = create_mpt(0);
     if (!one || !new_tmp) {
         goto clean_and_exit;
     }
@@ -204,7 +313,7 @@ mpt *mpt_add(const mpt *mpv_a, const mpt *mpv_b) {
         return NULL;
     }
 
-    new_tmp = create_mpt();
+    new_tmp = create_mpt(0);
     if (!new_tmp) {
         return NULL;
     }
@@ -243,6 +352,13 @@ mpt *mpt_add(const mpt *mpv_a, const mpt *mpv_b) {
     return new;
 }
 
+mpt *mpt_sub(const mpt *mpv_a, const mpt *mpv_b) {
+    mpt *negated_b = mpt_negate(mpv_b);
+    mpt *new = mpt_add(mpv_a, negated_b);
+    mpt_free(&negated_b);
+    return new;
+}
+
 mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b) {
     size_t i, max_bits;
     mpt *new, *new_tmp, *added, *shifted;
@@ -251,7 +367,7 @@ mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b) {
         return NULL;
     }
 
-    new_tmp = create_mpt();
+    new_tmp = create_mpt(0);
     if (!new_tmp) {
         return NULL;
     }
@@ -293,6 +409,48 @@ mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b) {
     return new;
 }
 
+mpt *mpt_factorial(const mpt *mpv) {
+    mpt *new, *new_tmp, *sub, *sub_tmp, *one;
+    new = new_tmp = sub = sub_tmp = one = NULL;
+    if (!mpv) {
+        return NULL;
+    }
+    if (mpt_is_negative_(mpv)) {
+        return NULL;
+    }
+    if (mpt_is_zero_(mpv)) {
+        return create_mpt(1);
+    }
+
+    one = create_mpt(1);
+    new = copy_mpt(mpv);
+    sub = mpt_sub(new, one);
+    if (!new || !one || !sub) {
+        goto clean_and_exit;
+    }
+
+    while (mpt_compare(sub, one) >= 1) {
+        new_tmp = mpt_mul(new, sub);
+        sub_tmp = mpt_sub(sub, one);
+
+        if (!new_tmp || !sub_tmp) {
+            mpt_free(&new_tmp);
+            mpt_free(&sub_tmp);
+            goto clean_and_exit;
+        }
+
+        mpt_free(&new);
+        mpt_free(&sub);
+        new = new_tmp;
+        sub = sub_tmp;
+    }
+
+  clean_and_exit:
+    mpt_free(&one);
+    mpt_free(&sub);
+    return new;
+}
+
 mpt *mpt_optimize(const mpt *orig) {
     char segments_to_remove, *segment;
     int msb;
@@ -307,7 +465,7 @@ mpt *mpt_optimize(const mpt *orig) {
 
     EXIT_IF_NOT(orig);
 
-    new = create_mpt();
+    new = create_mpt(0);
     EXIT_IF_NOT(new);
 
     msb = mpt_get_msb_(orig);
