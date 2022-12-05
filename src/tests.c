@@ -27,7 +27,7 @@ void test_add_1(char test_name[]) {
 
     mpv_test_res = mpt_add(mpv_a, mpv_b);
     if (!mpv_test_res) {
-        printf("%s ... Failed!", test_name);
+        printf("%s ... Failed!\n", test_name);
         goto clean_and_exit;
     }
 
@@ -56,7 +56,123 @@ void test_add_2(char test_name[]) {
 
     mpv_test_res = mpt_add(mpv_a, mpv_b);
     if (!mpv_test_res) {
-        printf("%s ... Failed!", test_name);
+        printf("%s ... Failed!\n", test_name);
+        goto clean_and_exit;
+    }
+
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+  clean_and_exit:
+    mpt_free(&mpv_a);
+    mpt_free(&mpv_b);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
+}
+
+void test_div_1(char test_name[]) {
+    char value_a[100] =  "-10";
+    char value_b[100] =  "3";
+    char true_res[100] =  "-3";
+    mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
+    mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_a = create_mpt(0);
+    mpt_parse_str(&mpv_a, value_a, dec);
+    mpv_b = create_mpt(0);
+    mpt_parse_str(&mpv_b, value_b, dec);
+    mpv_true_res = create_mpt(0);
+    mpt_parse_str(&mpv_true_res, true_res, dec);
+
+    mpv_test_res = mpt_div(mpv_a, mpv_b);
+    if (!mpv_test_res) {
+        printf("%s ... Failed!\n", test_name);
+        goto clean_and_exit;
+    }
+
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+  clean_and_exit:
+    mpt_free(&mpv_a);
+    mpt_free(&mpv_b);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
+}
+
+void test_div_2(char test_name[]) {
+    char value_a[100] =  "-10";
+    char value_b[100] =  "3787890478781928745";
+    char true_res[100] =  "0";
+    mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
+    mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_a = create_mpt(0);
+    mpt_parse_str(&mpv_a, value_a, dec);
+    mpv_b = create_mpt(0);
+    mpt_parse_str(&mpv_b, value_b, dec);
+    mpv_true_res = create_mpt(0);
+    mpt_parse_str(&mpv_true_res, true_res, dec);
+
+    mpv_test_res = mpt_div(mpv_a, mpv_b);
+    if (!mpv_test_res) {
+        printf("%s ... Failed!\n", test_name);
+        goto clean_and_exit;
+    }
+
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+  clean_and_exit:
+    mpt_free(&mpv_a);
+    mpt_free(&mpv_b);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
+}
+
+void test_mod_1(char test_name[]) {
+    char value_a[100] =  "12";
+    char value_b[100] =  "10";
+    char true_res[100] =  "2";
+    mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
+    mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_a = create_mpt(0);
+    mpt_parse_str(&mpv_a, value_a, dec);
+    mpv_b = create_mpt(0);
+    mpt_parse_str(&mpv_b, value_b, dec);
+    mpv_true_res = create_mpt(0);
+    mpt_parse_str(&mpv_true_res, true_res, dec);
+
+    mpv_test_res = mpt_mod(mpv_a, mpv_b);
+    if (!mpv_test_res) {
+        printf("%s ... Failed!\n", test_name);
+        goto clean_and_exit;
+    }
+
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+  clean_and_exit:
+    mpt_free(&mpv_a);
+    mpt_free(&mpv_b);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
+}
+
+void test_mod_2(char test_name[]) {
+    char value_a[100] =  "-10";
+    char value_b[100] =  "3";
+    char true_res[100] =  "-1";
+    mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
+    mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_a = create_mpt(0);
+    mpt_parse_str(&mpv_a, value_a, dec);
+    mpv_b = create_mpt(0);
+    mpt_parse_str(&mpv_b, value_b, dec);
+    mpv_true_res = create_mpt(0);
+    mpt_parse_str(&mpv_true_res, true_res, dec);
+
+    mpv_test_res = mpt_mod(mpv_a, mpv_b);
+    if (!mpv_test_res) {
+        printf("%s ... Failed!\n", test_name);
         goto clean_and_exit;
     }
 
@@ -207,6 +323,10 @@ void test_factorial_3(char test_name[]) {
 int main() {
     test_add_1("Add test 1");
     test_add_2("Add test 2");
+    test_div_1("Division test 1");
+    test_div_2("Division test 2");
+    test_mod_1("Mod test 1");
+    test_mod_2("Mod test 2");
     test_pow_1("Power test 1");
     test_pow_2("Power test 2");
     test_pow_3("Power test 3");

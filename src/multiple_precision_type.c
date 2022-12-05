@@ -237,6 +237,16 @@ int mpt_signum(const mpt *mpv) {
     return !mpt_is_zero_(mpv);
 }
 
+mpt *mpt_abs(const mpt *mpv) {
+    if (!mpv) {
+        return NULL;
+    }
+    if (mpt_is_negative_(mpv)) {
+        return mpt_negate(mpv);
+    }
+    return copy_mpt(mpv);
+}
+
 mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
     size_t i, j;
     mpt *new = NULL, *new_tmp = NULL;
@@ -410,6 +420,84 @@ mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b) {
     return new;
 }
 
+mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
+    int res_negative;
+    mpt *res, *res_next, *one, *abs_dividend, *abs_dividend_next, *abs_divisor;
+    res = res_next = one = abs_dividend = abs_dividend_next = abs_divisor = NULL;
+    if (!mpv_dividend || !mpv_divisor) {
+        return NULL;
+    }
+
+    if (mpt_is_zero_(mpv_divisor)) {
+        return NULL;
+    }
+
+    one = create_mpt(1);
+    if (!one) {
+        return NULL;
+    }
+    if (mpt_compare(mpv_divisor, one) == 0) {
+        mpt_free(&one);
+        return copy_mpt(mpv_dividend);
+    }
+
+    abs_dividend = mpt_abs(mpv_dividend);
+    if (!abs_dividend) {
+        return NULL;
+    }
+    abs_divisor = mpt_abs(mpv_divisor);
+    if (!abs_divisor) {
+        mpt_free(&abs_dividend);
+        return NULL;
+    }
+
+    res_negative = mpt_is_negative_(mpv_dividend) != mpt_is_negative_(mpv_divisor);
+
+    res = create_mpt(0);
+    if (!res) {
+        goto clean_and_exit;
+    }
+
+    while (mpt_compare(abs_dividend, abs_divisor) >= 0) {
+        res_next = mpt_add(res, one);
+        abs_dividend_next = mpt_sub(abs_dividend, abs_divisor);
+
+        if (!res_next || !abs_dividend_next) {
+            mpt_free(&res_next);
+            mpt_free(&abs_dividend_next);
+            res = abs_dividend = NULL;
+            goto clean_and_exit;
+        }
+        mpt_free(&res);
+        mpt_free(&abs_dividend);
+        res = res_next;
+        abs_dividend = abs_dividend_next;
+    }
+
+    if (res_negative) {
+        res_next = mpt_negate(res);
+        mpt_free(&res);
+        res = res_next;
+    }
+
+  clean_and_exit:
+    mpt_free(&one);
+    mpt_free(&abs_dividend);
+    mpt_free(&abs_divisor);
+    return res;
+}
+
+mpt *mpt_mod(const mpt *mpv_dividend, const mpt *mpv_divisor) {
+    mpt *res, *div, *mul;
+    res = div = mul = NULL;
+    div = mpt_div(mpv_dividend, mpv_divisor);
+    mul = mpt_mul(div, mpv_divisor);
+    res = mpt_sub(mpv_dividend, mul);
+    mpt_free(&div);
+    mpt_free(&mul);
+    return res;
+}
+
 mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent) {
     mpt *new, *new_next, *exp_sub, *exp_sub_next, *one;
     new = new_next = exp_sub = exp_sub_next = one = NULL;
@@ -435,6 +523,7 @@ mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent) {
         if (!new_next || !exp_sub_next) {
             mpt_free(&new_next);
             mpt_free(&exp_sub_next);
+            new = exp_sub_next = NULL;
             goto clean_and_exit;
         }
 
