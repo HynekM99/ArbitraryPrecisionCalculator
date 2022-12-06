@@ -128,9 +128,9 @@ void test_div_2(char test_name[]) {
 }
 
 void test_mod_1(char test_name[]) {
-    char value_a[100] =  "12";
+    char value_a[100] =  "4";
     char value_b[100] =  "10";
-    char true_res[100] =  "2";
+    char true_res[100] =  "4";
     mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
     mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
 
@@ -320,6 +320,14 @@ void test_factorial_3(char test_name[]) {
     mpt_free(&mpv_test_res);
 }
 
+void test_print_dec() {
+    char value_dec[100] = "4098000";
+    mpt *mpv = create_mpt(0);
+    mpt_parse_str(&mpv, value_dec, dec);
+    mpt_print_dec(mpv);
+    mpt_free(&mpv);
+}
+
 int main() {
     test_add_1("Add test 1");
     test_add_2("Add test 2");
@@ -333,6 +341,7 @@ int main() {
     test_factorial_1("Factorial test 1");
     test_factorial_2("Factorial test 2");
     test_factorial_3("Factorial test 3");
+    test_print_dec();
 
     return EXIT_SUCCESS;
 }

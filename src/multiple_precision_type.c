@@ -648,6 +648,55 @@ void mpt_print_bin(const mpt *mpv) {
     }
 }
 
+void mpt_print_dec(const mpt *mpv) {
+    size_t i;
+    vector_type *str = vector_allocate(sizeof(char), NULL);
+    mpt *mod, *div, *div_next, *ten;
+    mod = div = div_next = ten = NULL;
+    if (!mpv) {
+        return;
+    }
+    
+    ten = create_mpt(10);
+    if (!ten) {
+        return;
+    }
+
+    if (mpt_is_negative_(mpv)) {
+        printf("-");
+    }
+
+    div = mpt_abs(mpv);
+    if (!div) {
+        mpt_free(&ten);
+        return;
+    }
+
+    while (!mpt_is_zero_(div)) {
+        mod = mpt_mod(div, ten);
+        div_next = mpt_div(div, ten);
+        if (!mod || !div_next) {
+            mpt_free(&mod);
+            mpt_free(&div_next);
+            goto clean_and_exit;
+        }
+        vector_push_back(str, vector_at(mod->list, 0));
+        mpt_free(&mod);
+        mpt_free(&div);
+        div = div_next;
+    }
+
+    for (i = 0; i < vector_count(str); ++i) {
+        printf("%d", (*(char *)vector_at(str, vector_count(str) - i - 1)));
+    }
+    printf("\n");
+
+  clean_and_exit:
+    vector_deallocate(&str);
+    mpt_free(&div);
+    mpt_free(&ten);
+}
+
 void mpt_free(mpt **mpv) {
     if (!mpv || !*mpv) {
         return;
