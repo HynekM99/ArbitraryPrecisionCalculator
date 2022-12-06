@@ -69,10 +69,39 @@ void test_add_2(char test_name[]) {
     mpt_free(&mpv_true_res);
 }
 
+void test_mul_1(char test_name[]) {
+    char value_a[100] =  "13";
+    char value_b[100] =  "10";
+    char true_res[100] =  "130";
+    mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
+    mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
+
+    mpv_a = create_mpt(0);
+    mpt_parse_str(&mpv_a, value_a, dec);
+    mpv_b = create_mpt(0);
+    mpt_parse_str(&mpv_b, value_b, dec);
+    mpv_true_res = create_mpt(0);
+    mpt_parse_str(&mpv_true_res, true_res, dec);
+
+    mpv_test_res = mpt_mul(mpv_a, mpv_b);
+    if (!mpv_test_res) {
+        printf("%s ... Failed!\n", test_name);
+        goto clean_and_exit;
+    }
+
+    assert_equals(test_name, mpv_test_res, mpv_true_res);
+
+  clean_and_exit:
+    mpt_free(&mpv_a);
+    mpt_free(&mpv_b);
+    mpt_free(&mpv_test_res);
+    mpt_free(&mpv_true_res);
+}
+
 void test_div_1(char test_name[]) {
-    char value_a[100] =  "-10";
-    char value_b[100] =  "3";
-    char true_res[100] =  "-3";
+    char value_a[100] =  "4294967295";
+    char value_b[100] =  "8";
+    char true_res[100] =  "536870911";
     mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
     mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
 
@@ -321,7 +350,7 @@ void test_factorial_3(char test_name[]) {
 }
 
 void test_print_dec() {
-    char value_dec[100] = "4098000";
+    char value_dec[100] = "4098000023456787656858756765667576568768767860760867545453423121327";
     mpt *mpv = create_mpt(0);
     mpt_parse_str(&mpv, value_dec, dec);
     mpt_print_dec(mpv);
@@ -331,6 +360,7 @@ void test_print_dec() {
 int main() {
     test_add_1("Add test 1");
     test_add_2("Add test 2");
+    test_mul_1("Mul test 1");
     test_div_1("Division test 1");
     test_div_2("Division test 2");
     test_mod_1("Mod test 1");

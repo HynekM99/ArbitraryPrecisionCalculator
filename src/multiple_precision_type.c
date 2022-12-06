@@ -421,9 +421,10 @@ mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b) {
 }
 
 mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
-    int res_negative;
-    mpt *res, *res_next, *one, *abs_dividend, *abs_dividend_next, *abs_divisor;
-    res = res_next = one = abs_dividend = abs_dividend_next = abs_divisor = NULL;
+    size_t rb;
+    int is_res_negative, end = 0;
+    mpt *res, *res_negative, *part, *part_shifted, *one, *abs_dividend, *abs_dividend_next, *abs_divisor;
+    res = part = part_shifted = one = abs_dividend = abs_dividend_next = abs_divisor = NULL;
     if (!mpv_dividend || !mpv_divisor) {
         return NULL;
     }
@@ -451,39 +452,57 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
         return NULL;
     }
 
-    res_negative = mpt_is_negative_(mpv_dividend) != mpt_is_negative_(mpv_divisor);
+    is_res_negative = mpt_is_negative_(mpv_dividend) != mpt_is_negative_(mpv_divisor);
 
     res = create_mpt(0);
     if (!res) {
         goto clean_and_exit;
     }
 
-    while (mpt_compare(abs_dividend, abs_divisor) >= 0) {
-        res_next = mpt_add(res, one);
-        abs_dividend_next = mpt_sub(abs_dividend, abs_divisor);
+    rb = mpt_bit_count(abs_dividend) - 1;
+    part = create_mpt(0);
 
-        if (!res_next || !abs_dividend_next) {
-            mpt_free(&res_next);
-            mpt_free(&abs_dividend_next);
-            res = abs_dividend = NULL;
-            goto clean_and_exit;
+    for (;;) {
+        while (mpt_compare(part, abs_divisor) < 0) {
+            mpt_set_bit_to(res, rb, 0);
+
+            if (rb == 0) {
+                end = 1;
+                break;
+            }
+            part_shifted = mpt_shift(part, 1, 1);
+            mpt_free(&part);
+            --rb;
+            mpt_set_bit_to(part_shifted, 0, mpt_get_bit(abs_dividend, rb));
+            part = part_shifted;
         }
-        mpt_free(&res);
-        mpt_free(&abs_dividend);
-        res = res_next;
-        abs_dividend = abs_dividend_next;
-    }
+        if (end) {
+            break;
+        }
 
-    if (res_negative) {
-        res_next = mpt_negate(res);
-        mpt_free(&res);
-        res = res_next;
+        abs_dividend_next = mpt_sub(part, abs_divisor);
+        mpt_set_bit_to(res, rb, 1);
+
+        if (rb == 0) {
+            break;
+        }
+        part = mpt_shift(abs_dividend_next, 1, 1);
+        --rb;
+        mpt_set_bit_to(part, 0, mpt_get_bit(abs_dividend, rb));
     }
 
   clean_and_exit:
     mpt_free(&one);
+    mpt_free(&part);
     mpt_free(&abs_dividend);
     mpt_free(&abs_divisor);
+
+    if (is_res_negative) {
+        res_negative = mpt_negate(res);
+        mpt_free(&res);
+        res = res_negative;
+    }
+
     return res;
 }
 
@@ -617,7 +636,7 @@ mpt *mpt_optimize(const mpt *orig) {
 
     if (mpt_get_msb_(new) != msb) {
         bits = mpt_bit_count(new);
-        for (i = bits; i < bits + sizeof(unsigned int) * 8; ++i) {
+        for (i = bits; i < bits + new->list->item_size * 8; ++i) {
             EXIT_IF_NOT(mpt_set_bit_to(new, i, msb));
         }
     }
