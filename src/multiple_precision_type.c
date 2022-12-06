@@ -452,15 +452,17 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
         return NULL;
     }
 
+    rb = mpt_bit_count(abs_dividend) - 1;
     is_res_negative = mpt_is_negative_(mpv_dividend) != mpt_is_negative_(mpv_divisor);
 
     res = create_mpt(0);
     if (!res) {
         goto clean_and_exit;
     }
-
-    rb = mpt_bit_count(abs_dividend) - 1;
     part = create_mpt(0);
+    if (!part) {
+        goto clean_and_exit;
+    }
 
     for (;;) {
         while (mpt_compare(part, abs_divisor) < 0) {
@@ -471,24 +473,24 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
                 break;
             }
             part_shifted = mpt_shift(part, 1, 1);
+            mpt_set_bit_to(part_shifted, 0, mpt_get_bit(abs_dividend, --rb));
             mpt_free(&part);
-            --rb;
-            mpt_set_bit_to(part_shifted, 0, mpt_get_bit(abs_dividend, rb));
             part = part_shifted;
         }
         if (end) {
             break;
         }
 
-        abs_dividend_next = mpt_sub(part, abs_divisor);
         mpt_set_bit_to(res, rb, 1);
 
         if (rb == 0) {
             break;
         }
+        abs_dividend_next = mpt_sub(part, abs_divisor);
+        mpt_free(&part);
         part = mpt_shift(abs_dividend_next, 1, 1);
-        --rb;
-        mpt_set_bit_to(part, 0, mpt_get_bit(abs_dividend, rb));
+        mpt_free(&abs_dividend_next);
+        mpt_set_bit_to(part, 0, mpt_get_bit(abs_dividend, --rb));
     }
 
   clean_and_exit:
