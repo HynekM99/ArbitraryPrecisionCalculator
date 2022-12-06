@@ -71,8 +71,8 @@ void test_add_2(char test_name[]) {
 
 void test_mul_1(char test_name[]) {
     char value_a[100] =  "13";
-    char value_b[100] =  "10";
-    char true_res[100] =  "130";
+    char value_b[100] =  "-10";
+    char true_res[100] =  "-130";
     mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
     mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
 
@@ -350,10 +350,20 @@ void test_factorial_3(char test_name[]) {
 }
 
 void test_print_dec() {
-    char value_dec[100] = "4098000023456787656858756765667576568768767860760867545453423121327";
+    char value_dec[1000] = "-4098000023456787656848390217408925789234789623897410298375465667576568768767860760867545453423121327";
     mpt *mpv = create_mpt(0);
     mpt_parse_str(&mpv, value_dec, dec);
     mpt_print_dec(mpv);
+    printf("\n");
+    mpt_free(&mpv);
+}
+
+void test_print_hex() {
+    char value_dec[1000] = "7ffff";
+    mpt *mpv = create_mpt(0);
+    mpt_parse_str(&mpv, value_dec, hex);
+    mpt_print_hex(mpv);
+    printf("\n");
     mpt_free(&mpv);
 }
 
@@ -372,6 +382,7 @@ int main() {
     test_factorial_2("Factorial test 2");
     test_factorial_3("Factorial test 3");
     test_print_dec();
+    test_print_hex();
 
     return EXIT_SUCCESS;
 }

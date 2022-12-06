@@ -96,6 +96,16 @@ static size_t mpt_bit_pos_in_segment_(const mpt *mpv, const size_t bit) {
     return bit % (mpv->list->item_size * 8);
 }
 
+static char mpt_get_nibble(const mpt *mpv, const size_t nibble_pos) {
+    size_t i, bit_pos = nibble_pos * 4;
+    char nibble = 0;
+
+    for (i = 0; i < 4; ++i) {
+        nibble += mpt_get_bit(mpv, bit_pos + i) << i;
+    }
+    return nibble;
+}
+
 mpt *create_mpt(const char init_value) {
     mpt *new = (mpt *)malloc(sizeof(mpt));
     if (!new) {
@@ -716,6 +726,40 @@ void mpt_print_dec(const mpt *mpv) {
     vector_deallocate(&str);
     mpt_free(&div);
     mpt_free(&ten);
+}
+
+void mpt_print_hex(const mpt *mpv) {
+    size_t i, nibbles;
+    int msb;
+    char nibble, to_leave_out;
+    if (!mpv) {
+        return;
+    }
+
+    msb = mpt_get_msb_(mpv);
+    nibbles = vector_count(mpv->list) * (mpv->list->item_size * 8) / 4;
+    
+    to_leave_out = msb * 0xf;
+    printf("0x");
+    
+    for (i = 0; i < nibbles; ++i) {
+        nibble = mpt_get_nibble(mpv, nibbles - i - 1);
+        if (nibble != to_leave_out) {
+            break;
+        }
+    }
+
+    if (msb == 0 && nibble >= 8) {
+        printf("0");
+    }
+    else if (msb == 1 && nibble < 8) {
+        printf("f");
+    }
+
+    for (; i < nibbles; ++i) {
+        nibble = mpt_get_nibble(mpv, nibbles - i - 1);
+        printf("%x", nibble);
+    }
 }
 
 void mpt_free(mpt **mpv) {

@@ -49,6 +49,8 @@ void mpt_print_bin(const mpt *mpv);
 
 void mpt_print_dec(const mpt *mpv);
 
+void mpt_print_hex(const mpt *mpv);
+
 void mpt_free(mpt **mpv);
 
 #endif
