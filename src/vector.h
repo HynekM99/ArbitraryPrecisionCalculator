@@ -71,6 +71,8 @@ void vector_deinit(vector_type *v);
  */
 void vector_deallocate(vector_type **v);
 
+vector_type *vector_copy(const vector_type *src);
+
 /**
  * @brief Vrátí kapacitu vektoru (počet prvků, které do vektoru lze uložit bez realokace).
  * @param v Ukazatel na vektor.

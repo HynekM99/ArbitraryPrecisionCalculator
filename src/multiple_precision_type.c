@@ -19,12 +19,16 @@ static int mpt_add_segments_(mpt *mpv, const size_t segments_to_add) {
     return 1;
 }
 
+static size_t mpt_bits_in_segment_(const mpt *mpv) {
+    return mpv->list->item_size * BITS_IN_BYTE;
+}
+
 static size_t mpt_get_segment_(const mpt *mpv, const size_t bit) {
-    return bit / (mpv->list->item_size * 8);
+    return bit / mpt_bits_in_segment_(mpv);
 }
 
 static size_t mpt_bit_pos_in_segment_(const mpt *mpv, const size_t bit) {
-    return bit % (mpv->list->item_size * 8);
+    return bit % mpt_bits_in_segment_(mpv);
 }
 
 mpt *create_mpt(const char init_value) {
@@ -43,8 +47,7 @@ mpt *create_mpt(const char init_value) {
 }
 
 int init_mpt(mpt *mpv, const char init_value) {
-    char def = 0;
-    size_t i;
+    char zero = 0, *default_segment;
     if (!mpv) {
         return 0;
     }
@@ -55,19 +58,18 @@ int init_mpt(mpt *mpv, const char init_value) {
         return 0;
     }
 
-    vector_push_back(mpv->list, &def);
+    vector_push_back(mpv->list, &zero);
 
-    for (i = 0; i < sizeof(init_value) * 8; ++i) {
-        if (!mpt_set_bit_to(mpv, i, ((init_value >> i) & 1) == 1)) {
-            return 0;
-        }
+    default_segment = (char *)vector_at(mpv->list, 0);
+    if (!default_segment) {
+        return 0;
     }
+    *default_segment = init_value;
 
     return 1;
 }
 
 mpt *copy_mpt(const mpt *orig) {
-    size_t i;
     mpt *new = NULL;
     if (!orig) {
         return NULL;
@@ -78,18 +80,15 @@ mpt *copy_mpt(const mpt *orig) {
         return NULL;
     }
 
-    for (i = 0; i < mpt_bit_count(orig); ++i) {
-        if (!mpt_set_bit_to(new, i, mpt_get_bit(orig, i))) {
-            mpt_free(&new);
-            return NULL;
-        }
+    new->list = vector_copy(orig->list);
+    if (!new->list) {
+        mpt_free(&new);
     }
-
     return new;
 }
 
 size_t mpt_bit_count(const mpt *mpv) {
-    return mpv ? vector_count(mpv->list) * mpv->list->item_size * 8 : 0;
+    return mpv ? vector_count(mpv->list) * mpt_bits_in_segment_(mpv) : 0;
 }
 
 int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set) {
@@ -205,13 +204,13 @@ mpt *mpt_optimize(const mpt *orig) {
         }
     }
 
-    for (i = 0; i < (last_segment + 1) * orig->list->item_size * 8; ++i) {
+    for (i = 0; i < (last_segment + 1) * orig->list->item_size * BITS_IN_BYTE; ++i) {
         EXIT_IF_NOT(mpt_set_bit_to(new, i, mpt_get_bit(orig, i)));
     }
 
     if (mpt_get_msb(new) != msb) {
         bits = mpt_bit_count(new);
-        for (i = bits; i < bits + new->list->item_size * 8; ++i) {
+        for (i = bits; i < bits + new->list->item_size * BITS_IN_BYTE; ++i) {
             EXIT_IF_NOT(mpt_set_bit_to(new, i, msb));
         }
     }

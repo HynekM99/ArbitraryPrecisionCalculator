@@ -84,6 +84,28 @@ void vector_deallocate(vector_type **v) {
     *v = NULL;
 }
 
+vector_type *vector_copy(const vector_type *src) {
+    vector_type *dest = NULL;
+    if (!src) {
+        return NULL;
+    }
+
+    dest = vector_allocate(src->item_size, src->deallocator);
+    if (!dest) {
+        return NULL;
+    }
+
+    if (!vector_realloc(dest, src->capacity)) {
+        vector_deallocate(&dest);
+        return NULL;
+    }
+
+    memcpy(dest->data, src->data, vector_count(src));
+    dest->count = src->count;
+
+    return dest;
+}
+
 size_t vector_capacity(const vector_type *v) {
     return v ? v->capacity : 0; 
 }

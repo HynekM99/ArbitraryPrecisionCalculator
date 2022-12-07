@@ -153,7 +153,7 @@ void test_fac_3() {
 void test_print_bin() {
     char value_dec[1000] = "1010111001011100101000100101011010101111101010100000001101100";
     mpt *mpv = mpt_parse_str(value_dec, bin);
-    mpt_print_bin(mpv);
+    mpt_print(mpv, bin);
     printf("\n");
     mpt_free(&mpv);
 }
@@ -161,15 +161,15 @@ void test_print_bin() {
 void test_print_dec() {
     char value_dec[1000] = "-4098000023456787656848390217408925789234789623897410298375465667576568768767860760867545453423121327";
     mpt *mpv = mpt_parse_str(value_dec, dec);
-    mpt_print_dec(mpv);
+    mpt_print(mpv, dec);
     printf("\n");
     mpt_free(&mpv);
 }
 
 void test_print_hex() {
-    char value_dec[1000] = "-f";
+    char value_dec[1000] = "-80";
     mpt *mpv = mpt_parse_str(value_dec, hex);
-    mpt_print_hex(mpv);
+    mpt_print(mpv, hex);
     printf("\n");
     mpt_free(&mpv);
 }
