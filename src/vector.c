@@ -150,7 +150,7 @@ void *vector_at(const vector_type *v, const size_t at) {
 
 int vector_remove(vector_type *v, size_t count) {
     size_t i, index, vec_count;
-    if (!v || count == 0) {
+    if (!v) {
         return 0;
     }
 
