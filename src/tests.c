@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "multiple_precision_parsing.h"
+#include "mpt.h"
 
 typedef mpt* (*bi_function)(const mpt *, const mpt *);
 typedef mpt* (*un_function)(const mpt *);

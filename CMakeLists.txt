@@ -9,6 +9,7 @@ add_executable(main
     src/vector.c
     src/multiple_precision_type.c
     src/multiple_precision_parsing.c
+    src/multiple_precision_printing.c
 )
 
 add_executable(tests
@@ -17,6 +18,7 @@ add_executable(tests
     src/vector.c
     src/multiple_precision_type.c
     src/multiple_precision_parsing.c
+    src/multiple_precision_printing.c
 )
 
 target_link_libraries(main m)

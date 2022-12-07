@@ -1,5 +1,5 @@
-#ifndef MPT
-#define MPT
+#ifndef MPT_BASE
+#define MPT_BASE
 
 #include "vector.h"
 
@@ -50,12 +50,6 @@ mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent);
 mpt *mpt_factorial(const mpt *mpv);
 
 mpt *mpt_optimize(const mpt *orig);
-
-void mpt_print_bin(const mpt *mpv);
-
-void mpt_print_dec(const mpt *mpv);
-
-void mpt_print_hex(const mpt *mpv);
 
 void mpt_free(mpt **mpv);
 
