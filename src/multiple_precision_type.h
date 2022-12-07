@@ -19,6 +19,12 @@ int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set);
 
 int mpt_get_bit(const mpt *mpv, const size_t bit);
 
+size_t mpt_get_mssb_pos(const mpt *mpv);
+
+int mpt_is_zero(const mpt *mpv);
+
+int mpt_is_negative(const mpt *mpv);
+
 int mpt_compare(const mpt *mpv_a, const mpt *mpv_b);
 
 int mpt_signum(const mpt *mpv);

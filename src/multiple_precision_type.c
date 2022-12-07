@@ -19,39 +19,8 @@ static int mpt_add_segments_(mpt *mpv, const size_t segments_to_add) {
     return 1;
 }
 
-static size_t mpt_get_mssb_pos_(const mpt *mpv) {
-    size_t i, bit_pos, bit_count;
-    bit_count = mpt_bit_count(mpv);
-
-    for (i = 0; i < bit_count; ++i) {
-        bit_pos = bit_count - i - 1;
-        if (mpt_get_bit(mpv, bit_pos)) {
-            return bit_pos;
-        }
-    }
-
-    return ~0;
-}
-
 static int mpt_get_msb_(const mpt *mpv) {
     return mpt_get_bit(mpv, mpt_bit_count(mpv) - 1);
-}
-
-static int mpt_is_zero_(const mpt *mpv) {
-    size_t i;
-    if (mpt_get_msb_(mpv) == 1) {
-        return 0;
-    }
-    for (i = 0; i < mpt_bit_count(mpv); ++i) {
-        if (mpt_get_bit(mpv, i) == 1) {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-static int mpt_is_negative_(const mpt *mpv) {
-    return mpt_get_msb_(mpv) == 1;
 }
 
 static int init_mpt_(mpt *mpv, const char init_value) {
@@ -96,7 +65,7 @@ static size_t mpt_bit_pos_in_segment_(const mpt *mpv, const size_t bit) {
     return bit % (mpv->list->item_size * 8);
 }
 
-static char mpt_get_nibble(const mpt *mpv, const size_t nibble_pos) {
+static char mpt_get_nibble_(const mpt *mpv, const size_t nibble_pos) {
     size_t i, bit_pos = nibble_pos * 4;
     char nibble = 0;
 
@@ -189,6 +158,43 @@ int mpt_get_bit(const mpt *mpv, const size_t bit) {
     return (*segment >> bit_pos) & 1;
 }
 
+size_t mpt_get_mssb_pos(const mpt *mpv) {
+    size_t i, bit_pos, bit_count;
+    bit_count = mpt_bit_count(mpv);
+
+    for (i = 0; i < bit_count; ++i) {
+        bit_pos = bit_count - i - 1;
+        if (mpt_get_bit(mpv, bit_pos)) {
+            return bit_pos;
+        }
+    }
+
+    return ~0;
+}
+
+int mpt_is_zero(const mpt *mpv) {
+    size_t i;
+    if (!mpv) {
+        return 0;
+    }
+    if (mpt_get_msb_(mpv) == 1) {
+        return 0;
+    }
+    for (i = 0; i < mpt_bit_count(mpv); ++i) {
+        if (mpt_get_bit(mpv, i) == 1) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int mpt_is_negative(const mpt *mpv) {
+    if (!mpv) {
+        return 0;
+    }
+    return mpt_get_msb_(mpv) == 1;
+}
+
 int mpt_compare(const mpt *mpv_a, const mpt *mpv_b) {
     size_t mssb_pos_a, mssb_pos_b, i;
     int bit_a, bit_b;
@@ -212,8 +218,8 @@ int mpt_compare(const mpt *mpv_a, const mpt *mpv_b) {
         return -1;
     }
     
-    mssb_pos_a = mpt_get_mssb_pos_(mpv_a);
-    mssb_pos_b = mpt_get_mssb_pos_(mpv_b);
+    mssb_pos_a = mpt_get_mssb_pos(mpv_a);
+    mssb_pos_b = mpt_get_mssb_pos(mpv_b);
 
     if (mssb_pos_a > mssb_pos_b) {
         return 1;
@@ -244,14 +250,14 @@ int mpt_signum(const mpt *mpv) {
     if (mpt_get_msb_(mpv) == 1) {
         return -1;
     }
-    return !mpt_is_zero_(mpv);
+    return !mpt_is_zero(mpv);
 }
 
 mpt *mpt_abs(const mpt *mpv) {
     if (!mpv) {
         return NULL;
     }
-    if (mpt_is_negative_(mpv)) {
+    if (mpt_is_negative(mpv)) {
         return mpt_negate(mpv);
     }
     return copy_mpt(mpv);
@@ -439,7 +445,7 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
         return NULL;
     }
 
-    if (mpt_is_zero_(mpv_divisor)) {
+    if (mpt_is_zero(mpv_divisor)) {
         return NULL;
     }
 
@@ -463,7 +469,7 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
     }
 
     rb = mpt_bit_count(abs_dividend) - 1;
-    is_res_negative = mpt_is_negative_(mpv_dividend) != mpt_is_negative_(mpv_divisor);
+    is_res_negative = mpt_is_negative(mpv_dividend) != mpt_is_negative(mpv_divisor);
 
     res = create_mpt(0);
     if (!res) {
@@ -535,7 +541,7 @@ mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent) {
     if (!mpv_base || !mpv_exponent) {
         return NULL;
     }
-    if (mpt_is_negative_(mpv_exponent)) {
+    if (mpt_is_negative(mpv_exponent)) {
         return create_mpt(0);
     }
 
@@ -576,10 +582,10 @@ mpt *mpt_factorial(const mpt *mpv) {
     if (!mpv) {
         return NULL;
     }
-    if (mpt_is_negative_(mpv)) {
+    if (mpt_is_negative(mpv)) {
         return NULL;
     }
-    if (mpt_is_zero_(mpv)) {
+    if (mpt_is_zero(mpv)) {
         return create_mpt(1);
     }
 
@@ -681,29 +687,29 @@ void mpt_print_bin(const mpt *mpv) {
 
 void mpt_print_dec(const mpt *mpv) {
     size_t i;
-    vector_type *str = vector_allocate(sizeof(char), NULL);
+    vector_type *str;
     mpt *mod, *div, *div_next, *ten;
     mod = div = div_next = ten = NULL;
     if (!mpv) {
         return;
     }
-    
+
     ten = create_mpt(10);
+    str = vector_allocate(sizeof(char), NULL);
     if (!ten) {
-        return;
+        goto clean_and_exit;
     }
 
-    if (mpt_is_negative_(mpv)) {
+    if (mpt_is_negative(mpv)) {
         printf("-");
     }
 
     div = mpt_abs(mpv);
     if (!div) {
-        mpt_free(&ten);
-        return;
+        goto clean_and_exit;
     }
 
-    while (!mpt_is_zero_(div)) {
+    while (!mpt_is_zero(div)) {
         mod = mpt_mod(div, ten);
         div_next = mpt_div(div, ten);
         if (!mod || !div_next) {
@@ -720,7 +726,6 @@ void mpt_print_dec(const mpt *mpv) {
     for (i = 0; i < vector_count(str); ++i) {
         printf("%d", (*(char *)vector_at(str, vector_count(str) - i - 1)));
     }
-    printf("\n");
 
   clean_and_exit:
     vector_deallocate(&str);
@@ -743,7 +748,7 @@ void mpt_print_hex(const mpt *mpv) {
     printf("0x");
     
     for (i = 0; i < nibbles; ++i) {
-        nibble = mpt_get_nibble(mpv, nibbles - i - 1);
+        nibble = mpt_get_nibble_(mpv, nibbles - i - 1);
         if (nibble != to_leave_out) {
             break;
         }
@@ -756,8 +761,12 @@ void mpt_print_hex(const mpt *mpv) {
         printf("f");
     }
 
+    if (i == nibbles) {
+        printf("%x", nibble);
+    }
+
     for (; i < nibbles; ++i) {
-        nibble = mpt_get_nibble(mpv, nibbles - i - 1);
+        nibble = mpt_get_nibble_(mpv, nibbles - i - 1);
         printf("%x", nibble);
     }
 }
