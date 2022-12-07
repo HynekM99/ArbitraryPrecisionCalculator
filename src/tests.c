@@ -49,9 +49,9 @@ void test_un(const un_function func, const char value[], const char true_value[]
 }
 
 void test_add_1() {
-    char value_a[100] =  "100000000000";
-    char value_b[100] =   "25000000001";
-    char true_value[100] = "125000000001";
+    char value_a[100] =  "10";
+    char value_b[100] =   "25";
+    char true_value[100] = "35";
     test_bi(mpt_add, value_a, value_b, true_value);
 }
 
@@ -185,7 +185,7 @@ void run_tests(const char name[], const test tests[], const size_t count) {
 }
 
 int main() {
-    test add_tests[2] = {test_add_1, test_add_2};
+    test add_tests[3] = {test_add_1, test_add_2, test_add_3};
     test mul_tests[2] = {test_mul_1, test_mul_2};
     test div_tests[2] = {test_div_1, test_div_2};
     test mod_tests[2] = {test_mod_1, test_mod_2};

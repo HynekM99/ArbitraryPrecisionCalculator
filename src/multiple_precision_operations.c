@@ -96,7 +96,7 @@ mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
         i = positions, j = 0;
     }
 
-    for (; i < mpt_bit_count(orig) + orig->list->item_size * 8; ++i, ++j) {
+    for (; i < mpt_bit_count(orig) + mpt_bits_in_segment(orig); ++i, ++j) {
         if (!mpt_set_bit_to(new_tmp, j, mpt_get_bit(orig, i))) {
             goto clean_and_exit;
         }
@@ -207,6 +207,9 @@ mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b) {
     if (!mpv_a || !mpv_b) {
         return NULL;
     }
+    if (mpt_is_zero(mpv_a) || mpt_is_zero(mpv_b)) {
+        return create_mpt(0);
+    }
 
     new_tmp = create_mpt(0);
     if (!new_tmp) {
@@ -224,20 +227,16 @@ mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b) {
         if (mpt_get_bit(mpv_b, i) == 0) {
             continue;
         }
-
         shifted = mpt_shift(mpv_a, i, 1);
         added = mpt_add(new_tmp, shifted);
-
-        if (!added) {
-            goto clean_and_exit;
-        }
         mpt_free(&shifted);
         mpt_free(&new_tmp);
         new_tmp = added;
+        added = NULL;
     }
 
     if (mpt_bit_count(new_tmp) > max_bits) {
-        to_remove = (mpt_bit_count(new_tmp) - max_bits) / (new_tmp->list->item_size * 8);
+        to_remove = (mpt_bit_count(new_tmp) - max_bits) / mpt_bits_in_segment(new_tmp);
         if (!vector_remove(new_tmp->list, to_remove)) {
             goto clean_and_exit;
         }
@@ -255,7 +254,7 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
     size_t rb;
     int is_res_negative, end = 0;
     mpt *res, *res_negative, *part, *part_shifted, *one, *abs_dividend, *abs_dividend_next, *abs_divisor;
-    res = part = part_shifted = one = abs_dividend = abs_dividend_next = abs_divisor = NULL;
+    res = res_negative = part = part_shifted = one = abs_dividend = abs_dividend_next = abs_divisor = NULL;
     if (!mpv_dividend || !mpv_divisor) {
         return NULL;
     }
@@ -307,6 +306,7 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
             mpt_set_bit_to(part_shifted, 0, mpt_get_bit(abs_dividend, --rb));
             mpt_free(&part);
             part = part_shifted;
+            part_shifted = NULL;
         }
         if (end) {
             break;
@@ -334,6 +334,7 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
         res_negative = mpt_negate(res);
         mpt_free(&res);
         res = res_negative;
+        res_negative = NULL;
     }
 
     return res;

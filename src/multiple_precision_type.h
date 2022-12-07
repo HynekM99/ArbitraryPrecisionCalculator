@@ -22,6 +22,10 @@ size_t mpt_bit_count(const mpt *mpv);
 
 int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set);
 
+size_t mpt_bits_in_segment(const mpt *mpv);
+
+char *mpt_get_segment(const mpt *mpv, const size_t index);
+
 int mpt_get_bit(const mpt *mpv, const size_t bit);
 
 int mpt_get_msb(const mpt *mpv);
