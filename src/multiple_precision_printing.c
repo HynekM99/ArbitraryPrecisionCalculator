@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "multiple_precision_printing.h"
+#include "multiple_precision_operations.h"
 
 static char mpt_get_nibble_(const mpt *mpv, const size_t nibble_pos) {
     size_t i, bit_pos = nibble_pos * 4;

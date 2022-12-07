@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "multiple_precision_parsing.h"
+#include "multiple_precision_operations.h"
 
 static int fill_set_bits_(mpt *target) {
     size_t i = mpt_bit_count(target) - 1;
