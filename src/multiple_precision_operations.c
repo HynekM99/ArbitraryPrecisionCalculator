@@ -70,7 +70,7 @@ mpt *mpt_abs(const mpt *mpv) {
     if (mpt_is_negative(mpv)) {
         return mpt_negate(mpv);
     }
-    return copy_mpt(mpv);
+    return clone_mpt(mpv);
 }
 
 mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
@@ -110,6 +110,7 @@ mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
 
 mpt *mpt_negate(const mpt *mpv) {
     size_t i;
+    char segment;
     mpt *new_tmp, *new, *one;
     new_tmp = new = one = NULL;
     if (!mpv) {
@@ -122,12 +123,13 @@ mpt *mpt_negate(const mpt *mpv) {
         goto clean_and_exit;
     }
 
-    if (!mpt_set_bit_to(one, 0, 1)) {
+    if (!vector_remove(new_tmp->list, vector_count(new_tmp->list))) {
         goto clean_and_exit;
     }
 
-    for (i = 0; i < mpt_bit_count(mpv); ++i) {
-        if (!mpt_set_bit_to(new_tmp, i, !mpt_get_bit(mpv, i))) {
+    for (i = 0; i < vector_count(mpv->list); ++i) {
+        segment = ~(mpt_get_segment(mpv, i));
+        if (!vector_push_back(new_tmp->list, &segment)) {
             goto clean_and_exit;
         }
     }
@@ -159,23 +161,19 @@ mpt *mpt_add(const mpt *mpv_a, const mpt *mpv_b) {
     } else {
         segments = vector_count(mpv_b->list);
     }
-    segments += 2;
 
-    segment_a = mpt_get_segment(mpv_a, 0);
-    segment_b = mpt_get_segment(mpv_b, 0);
-    *mpt_get_segment_ptr(new_tmp, 0) = segment_a + segment_b;
-    carry = addition_carry_(segment_a, segment_b, carry);
-
-    for (i = 1; i < segments; ++i) {
-        segment_a = mpt_get_segment(mpv_a, i);
-        segment_b = mpt_get_segment(mpv_b, i);
-        vector_push_back(new_tmp->list, &zero);
-        *mpt_get_segment_ptr(new_tmp, i) = segment_a + segment_b + carry;
-        carry = addition_carry_(segment_a, segment_b, carry);
+    if (!vector_remove(new_tmp->list, vector_count(new_tmp->list))) {
+        goto clean_and_exit;
     }
 
-    if (!vector_remove(new_tmp->list, 1)) {
-        goto clean_and_exit;
+    for (i = 0; i < segments + 1; ++i) {
+        segment_a = mpt_get_segment(mpv_a, i);
+        segment_b = mpt_get_segment(mpv_b, i);
+        if (!vector_push_back(new_tmp->list, &zero)) {
+            goto clean_and_exit;
+        }
+        *mpt_get_segment_ptr(new_tmp, i) = segment_a + segment_b + carry;
+        carry = addition_carry_(segment_a, segment_b, carry);
     }
 
     new = mpt_optimize(new_tmp);
@@ -222,9 +220,7 @@ mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b) {
         shifted = mpt_shift(mpv_a, i, 1);
         added = mpt_add(new_tmp, shifted);
         mpt_free(&shifted);
-        mpt_free(&new_tmp);
-        new_tmp = added;
-        added = NULL;
+        replace_mpt(&new_tmp, &added);
     }
 
     if (mpt_bit_count(new_tmp) > max_bits) {
@@ -244,7 +240,7 @@ mpt *mpt_mul(const mpt *mpv_a, const mpt *mpv_b) {
 
 mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
     size_t rb;
-    int is_res_negative, end = 0;
+    int is_res_negative;
     mpt *res, *res_negative, *part, *part_shifted, *one, *abs_dividend, *abs_dividend_next, *abs_divisor;
     res = res_negative = part = part_shifted = one = abs_dividend = abs_dividend_next = abs_divisor = NULL;
     if (!mpv_dividend || !mpv_divisor) {
@@ -261,17 +257,16 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
     }
     if (mpt_compare(mpv_divisor, one) == 0) {
         mpt_free(&one);
-        return copy_mpt(mpv_dividend);
+        return clone_mpt(mpv_dividend);
     }
 
     abs_dividend = mpt_abs(mpv_dividend);
     if (!abs_dividend) {
-        return NULL;
+        goto clean_and_exit;
     }
     abs_divisor = mpt_abs(mpv_divisor);
     if (!abs_divisor) {
-        mpt_free(&abs_dividend);
-        return NULL;
+        goto clean_and_exit;
     }
 
     rb = mpt_bit_count(abs_dividend) - 1;
@@ -288,45 +283,49 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
 
     for (;;) {
         while (mpt_compare(part, abs_divisor) < 0) {
-            mpt_set_bit_to(res, rb, 0);
+            if (!mpt_set_bit_to(res, rb, 0)) {
+                mpt_free(&res);
+                goto clean_and_exit;
+            }
 
             if (rb == 0) {
-                end = 1;
-                break;
+                goto clean_and_exit;
             }
             part_shifted = mpt_shift(part, 1, 1);
-            mpt_set_bit_to(part_shifted, 0, mpt_get_bit(abs_dividend, --rb));
-            mpt_free(&part);
-            part = part_shifted;
-            part_shifted = NULL;
-        }
-        if (end) {
-            break;
+            if (!mpt_set_bit_to(part_shifted, 0, mpt_get_bit(abs_dividend, --rb))) {
+                mpt_free(&res);
+                goto clean_and_exit;
+            }
+            replace_mpt(&part, &part_shifted);
         }
 
         mpt_set_bit_to(res, rb, 1);
-
         if (rb == 0) {
             break;
         }
+
         abs_dividend_next = mpt_sub(part, abs_divisor);
         mpt_free(&part);
+
         part = mpt_shift(abs_dividend_next, 1, 1);
         mpt_free(&abs_dividend_next);
-        mpt_set_bit_to(part, 0, mpt_get_bit(abs_dividend, --rb));
+
+        if (!mpt_set_bit_to(part, 0, mpt_get_bit(abs_dividend, --rb))) {
+            mpt_free(&res);
+            goto clean_and_exit;
+        }
     }
 
   clean_and_exit:
     mpt_free(&one);
     mpt_free(&part);
+    mpt_free(&part_shifted);
     mpt_free(&abs_dividend);
     mpt_free(&abs_divisor);
 
     if (is_res_negative) {
         res_negative = mpt_negate(res);
-        mpt_free(&res);
-        res = res_negative;
-        res_negative = NULL;
+        replace_mpt(&res, &res_negative);
     }
 
     return res;
@@ -353,8 +352,8 @@ mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent) {
         return create_mpt(0);
     }
 
-    exp_sub = copy_mpt(mpv_exponent);
-    new = copy_mpt(mpv_base);
+    exp_sub = clone_mpt(mpv_exponent);
+    new = clone_mpt(mpv_base);
     one = create_mpt(1);
     if (!exp_sub || !new || !one) {
         mpt_free(&new);
@@ -372,10 +371,8 @@ mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent) {
             goto clean_and_exit;
         }
 
-        mpt_free(&exp_sub);
-        mpt_free(&new);
-        exp_sub = exp_sub_next;
-        new = new_next;
+        replace_mpt(&exp_sub, &exp_sub_next);
+        replace_mpt(&new, &new_next);
     }
 
   clean_and_exit:
@@ -398,7 +395,7 @@ mpt *mpt_factorial(const mpt *mpv) {
     }
 
     one = create_mpt(1);
-    new = copy_mpt(mpv);
+    new = clone_mpt(mpv);
     sub = mpt_sub(new, one);
     if (!new || !one || !sub) {
         goto clean_and_exit;
@@ -414,10 +411,8 @@ mpt *mpt_factorial(const mpt *mpv) {
             goto clean_and_exit;
         }
 
-        mpt_free(&new);
-        mpt_free(&sub);
-        new = new_tmp;
-        sub = sub_tmp;
+        replace_mpt(&new, &new_tmp);
+        replace_mpt(&sub, &sub_tmp);
     }
 
   clean_and_exit:

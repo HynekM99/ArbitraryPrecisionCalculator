@@ -84,7 +84,7 @@ void vector_deallocate(vector_type **v) {
     *v = NULL;
 }
 
-vector_type *vector_copy(const vector_type *src) {
+vector_type *vector_clone(const vector_type *src) {
     vector_type *dest = NULL;
     if (!src) {
         return NULL;

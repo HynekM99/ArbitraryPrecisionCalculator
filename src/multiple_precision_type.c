@@ -43,7 +43,7 @@ mpt *create_mpt(const char init_value) {
 }
 
 int init_mpt(mpt *mpv, const char init_value) {
-    char zero = 0, *default_segment;
+    char *default_segment;
     if (!mpv) {
         return 0;
     }
@@ -54,8 +54,9 @@ int init_mpt(mpt *mpv, const char init_value) {
         return 0;
     }
 
-    vector_push_back(mpv->list, &zero);
-
+    if (!mpt_add_segments_(mpv, 1)) {
+        return 0;
+    }
     default_segment = mpt_get_segment_ptr(mpv, 0);
     if (!default_segment) {
         return 0;
@@ -65,7 +66,7 @@ int init_mpt(mpt *mpv, const char init_value) {
     return 1;
 }
 
-mpt *copy_mpt(const mpt *orig) {
+mpt *clone_mpt(const mpt *orig) {
     mpt *new = NULL;
     if (!orig) {
         return NULL;
@@ -77,12 +78,21 @@ mpt *copy_mpt(const mpt *orig) {
     }
 
     vector_deallocate(&new->list);
-    new->list = vector_copy(orig->list);
+    new->list = vector_clone(orig->list);
     if (!new->list) {
         mpt_free(&new);
     }
 
     return new;
+}
+
+void replace_mpt(mpt **to_replace, mpt **replace_with) {
+    if (!to_replace || !replace_with) {
+        return;
+    }
+    mpt_free(to_replace);
+    *to_replace = *replace_with;
+    *replace_with = NULL;
 }
 
 size_t mpt_bit_count(const mpt *mpv) {
@@ -204,7 +214,7 @@ mpt *mpt_optimize(const mpt *orig) {
 
     EXIT_IF_NOT(orig);
 
-    new = copy_mpt(orig);
+    new = clone_mpt(orig);
     EXIT_IF_NOT(new);
 
     msb = mpt_get_msb(orig);

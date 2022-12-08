@@ -16,7 +16,9 @@ mpt *create_mpt(const char init_value);
 
 int init_mpt(mpt *mpv, const char init_value);
 
-mpt *copy_mpt(const mpt *orig);
+mpt *clone_mpt(const mpt *orig);
+
+void replace_mpt(mpt **to_replace, mpt **replace_with);
 
 size_t mpt_bit_count(const mpt *mpv);
 
