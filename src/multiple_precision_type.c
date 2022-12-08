@@ -56,7 +56,7 @@ int init_mpt(mpt *mpv, const char init_value) {
 
     vector_push_back(mpv->list, &zero);
 
-    default_segment = mpt_get_segment(mpv, 0);
+    default_segment = mpt_get_segment_ptr(mpv, 0);
     if (!default_segment) {
         return 0;
     }
@@ -103,7 +103,7 @@ int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set) {
         }
     }
 
-    segment = mpt_get_segment(mpv, segment_pos);
+    segment = mpt_get_segment_ptr(mpv, segment_pos);
 
     if (!segment) {
         return 0;
@@ -122,8 +122,18 @@ size_t mpt_bits_in_segment(const mpt *mpv) {
     return mpv ? mpv->list->item_size * BITS_IN_BYTE : 0;
 }
 
-char *mpt_get_segment(const mpt *mpv, const size_t index) {
-    return mpv ? (char *)vector_at(mpv->list, index) : NULL;
+char *mpt_get_segment_ptr(const mpt *mpv, const size_t index) {
+    if (!mpv) {
+        return NULL;
+    }
+    return (char *)vector_at(mpv->list, index);
+}
+
+char mpt_get_segment(const mpt *mpv, const size_t index) {
+    if (index >= vector_count(mpv->list)) {
+        return mpt_get_msb(mpv) * 0xff;
+    }
+    return *mpt_get_segment_ptr(mpv, index);
 }
 
 int mpt_get_bit(const mpt *mpv, const size_t bit) {
@@ -133,7 +143,7 @@ int mpt_get_bit(const mpt *mpv, const size_t bit) {
     if (bit >= mpt_bit_count(mpv)) {
         return mpt_get_msb(mpv);
     }
-    segment = mpt_get_segment(mpv, mpt_get_segment_index_(mpv, bit));
+    segment = mpt_get_segment_ptr(mpv, mpt_get_segment_index_(mpv, bit));
     bit_pos = mpt_bit_pos_in_segment_(mpv, bit);
 
     return (*segment >> bit_pos) & 1;
@@ -165,7 +175,7 @@ int mpt_is_zero(const mpt *mpv) {
     }
 
     for (i = 0; i < vector_count(mpv->list); ++i) {
-        segment = mpt_get_segment(mpv, i);
+        segment = mpt_get_segment_ptr(mpv, i);
         if (!segment || *segment != 0) {
             return 0;
         }
@@ -202,7 +212,7 @@ mpt *mpt_optimize(const mpt *orig) {
 
     for (i = 0; i < vector_count(orig->list); ++i) {
         last_segment = vector_count(orig->list) - i - 1;
-        segment = mpt_get_segment(orig, last_segment);
+        segment = mpt_get_segment_ptr(orig, last_segment);
         EXIT_IF_NOT(segment);
 
         if (*segment != segments_to_remove) {
@@ -218,7 +228,7 @@ mpt *mpt_optimize(const mpt *orig) {
 
     if (mpt_get_msb(new) != msb) {
         mpt_add_segments_(new, 1);
-        segment = mpt_get_segment(new, vector_count(new->list) - 1);
+        segment = mpt_get_segment_ptr(new, vector_count(new->list) - 1);
         EXIT_IF_NOT(segment);
         *segment = segments_to_remove;
     }

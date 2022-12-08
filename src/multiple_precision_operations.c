@@ -1,13 +1,8 @@
 #include "multiple_precision_operations.h"
 
-static void half_adder_(const int a, const int b, int *bit, int *carry) {
-    *bit = a ^ b;
-    *carry = a && b;
-}
-
-static void full_adder_(const int a, const int b, int cin, int *bit, int *cout) {
-    *bit = a ^ b ^ cin;
-    *cout = (a && b) | (cin && (a ^ b));
+static char addition_carry_(const unsigned char a, const unsigned char b, unsigned char carry) {
+    unsigned char c = a + b;
+    return (c < a ) || (c == 255 && carry == 1);
 }
 
 int mpt_compare(const mpt *mpv_a, const mpt *mpv_b) {
@@ -146,8 +141,8 @@ mpt *mpt_negate(const mpt *mpv) {
 }
 
 mpt *mpt_add(const mpt *mpv_a, const mpt *mpv_b) {
-    size_t i, max_bits;
-    int a, b, bit, carry;
+    size_t i, segments;
+    unsigned char zero = 0, segment_a, segment_b, carry = 0;
     mpt *new, *new_tmp;
     new = new_tmp = NULL;
     if (!mpv_a || !mpv_b) {
@@ -160,26 +155,23 @@ mpt *mpt_add(const mpt *mpv_a, const mpt *mpv_b) {
     }
 
     if (mpt_bit_count(mpv_a) >= mpt_bit_count(mpv_b)) {
-        max_bits = mpt_bit_count(mpv_a);
+        segments = vector_count(mpv_a->list);
     } else {
-        max_bits = mpt_bit_count(mpv_b);
+        segments = vector_count(mpv_b->list);
     }
-    max_bits += mpv_a->list->item_size * 8 * 2;
+    segments += 2;
 
-    a = mpt_get_bit(mpv_a, 0);
-    b = mpt_get_bit(mpv_b, 0);
-    half_adder_(a, b, &bit, &carry);
-    if (!mpt_set_bit_to(new_tmp, 0, bit)) {
-        goto clean_and_exit;
-    }
+    segment_a = mpt_get_segment(mpv_a, 0);
+    segment_b = mpt_get_segment(mpv_b, 0);
+    *mpt_get_segment_ptr(new_tmp, 0) = segment_a + segment_b;
+    carry = addition_carry_(segment_a, segment_b, carry);
 
-    for (i = 1; i < max_bits; ++i) {
-        a = mpt_get_bit(mpv_a, i);
-        b = mpt_get_bit(mpv_b, i);
-        full_adder_(a, b, carry, &bit, &carry);
-        if (!mpt_set_bit_to(new_tmp, i, bit)) {
-            goto clean_and_exit;
-        }   
+    for (i = 1; i < segments; ++i) {
+        segment_a = mpt_get_segment(mpv_a, i);
+        segment_b = mpt_get_segment(mpv_b, i);
+        vector_push_back(new_tmp->list, &zero);
+        *mpt_get_segment_ptr(new_tmp, i) = segment_a + segment_b + carry;
+        carry = addition_carry_(segment_a, segment_b, carry);
     }
 
     if (!vector_remove(new_tmp->list, 1)) {
