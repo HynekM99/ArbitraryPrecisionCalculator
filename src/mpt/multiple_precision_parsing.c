@@ -52,12 +52,14 @@ int parse_char(const char c, const enum bases base) {
     return parser(c);
 }
 
-mpt *mpt_parse_str_bin(const char str[]) {
-    size_t i = 0;
-    int negative = 0, msb_set = 0;
+mpt *mpt_parse_str_bin(const char **str) {
+    int negative = 0, msb_set = 0, char_value = 0;
     mpt *target, *shifted, *mpv_negative;
     target = shifted = mpv_negative = NULL;
-    if (!str || str[0] == '\000') {
+    if (!str || !*str) {
+        return NULL;
+    }
+    if (**str == '\000' || **str == ' ') {
         return NULL;
     }
 
@@ -66,24 +68,25 @@ mpt *mpt_parse_str_bin(const char str[]) {
         return NULL;
     }
 
-    if (str[0] == '-') {
+    if (*str[0] == '-') {
         negative = 1;
-        i = 1;
+        ++(*str);
     }
-    if (str[i] == '1') {
+    if (**str != '0' && **str != '1') {
+        mpt_free(&target);
+        return NULL;
+    }
+
+    if (**str == '1') {
         msb_set = 1;
     }
 
-    for (; str[i] != '\000'; ++i) {
+    char_value = parse_bin_char_(**str);
+    for (; char_value >= 0; char_value = parse_bin_char_(**str)) {
         shifted = mpt_shift(target, 1, 1);
-        mpt_set_bit_to(shifted, 0, parse_bin_char_(str[i]));
-        mpt_free(&target);
-        target = shifted;
-        shifted = NULL;
-    }
-
-    if (mpt_is_zero(target) == 1) {
-        return NULL;
+        mpt_set_bit_to(shifted, 0, char_value);
+        replace_mpt(&target, &shifted);
+        ++(*str);
     }
 
     if (msb_set) {
@@ -95,21 +98,21 @@ mpt *mpt_parse_str_bin(const char str[]) {
 
     if (negative) {
         mpv_negative = mpt_negate(target);
-        mpt_free(&target);
-        target = mpv_negative;
-        mpv_negative = NULL;
+        replace_mpt(&target, &mpv_negative);
     }
 
     return target;
 }
 
-mpt *mpt_parse_str_dec(const char str[]) {
-    size_t i = 0;
+mpt *mpt_parse_str_dec(const char **str) {
     int negative = 0, char_value;
     mpt *target, *mpv_char, *multiplied, *added, *negated, *ten;
     target = mpv_char = multiplied = added = negated = ten = NULL;
-    if (!str || str[0] == '\000') {
-        return 0;
+    if (!str || !*str) {
+        return NULL;
+    }
+    if (**str == '\000' || **str == ' ') {
+        return NULL;
     }
 
     ten = create_mpt(10);
@@ -117,38 +120,33 @@ mpt *mpt_parse_str_dec(const char str[]) {
     if (!ten || !target) {
         mpt_free(&ten);
         mpt_free(&target);
-        return 0;
+        return NULL;
     }
 
-    if (str[0] == '-') {
+    if (**str == '-') {
         negative = 1;
-        i = 1;
+        ++(*str);
     }
-    for (; str[i] != '\000'; ++i) {
-        char_value = parse_dec_char_(str[i]);
-        if (char_value < 0) {
-            mpt_free(&target);
-            goto clean_and_exit;
-        }
+
+    char_value = parse_dec_char_(**str);
+    for (; char_value >= 0; char_value = parse_dec_char_(**str)) {
         mpv_char = create_mpt(char_value);
         multiplied = mpt_mul(target, ten);
         added = mpt_add(multiplied, mpv_char);
         mpt_free(&mpv_char);
         mpt_free(&multiplied);
-        mpt_free(&target);
-        target = added;
-        added = NULL;
+        replace_mpt(&target, &added);
 
         if (!target) {
             goto clean_and_exit;
         }
+
+        ++(*str);
     }
 
     if (negative) {
         negated = mpt_negate(target);
-        mpt_free(&target);
-        target = negated;
-        negated = NULL;
+        replace_mpt(&target, &negated);
     }
 
   clean_and_exit:
@@ -159,13 +157,15 @@ mpt *mpt_parse_str_dec(const char str[]) {
     return target;
 }
 
-mpt *mpt_parse_str_hex(const char str[]) {
-    size_t i = 0;
+mpt *mpt_parse_str_hex(const char **str) {
     int negative = 0, msb_set = 0, char_value;
     mpt *target, *mpv_char, *shifted, *added, *mpv_negative;
     target = mpv_char = shifted = added = mpv_negative = NULL;
-    if (!str || str[0] == '\000') {
-        return 0;
+    if (!str || !*str) {
+        return NULL;
+    }
+    if (**str == '\000' || **str == ' ') {
+        return NULL;
     }
 
     target = create_mpt(0);
@@ -173,36 +173,28 @@ mpt *mpt_parse_str_hex(const char str[]) {
         return 0;
     }
 
-    if (str[0] == '-') {
+    if (**str == '-') {
         negative = 1;
-        i = 1;
+        ++(*str);
     }
-    if (parse_hex_char_(str[i]) >= 8) {
+    if (parse_hex_char_(**str) >= 8) {
         msb_set = 1;
     }
 
-    for (; str[i] != '\000'; ++i) {
-        char_value = parse_hex_char_(str[i]);
-        if (char_value < 0) {
-            mpt_free(&target);
-            goto clean_and_exit;
-        }
+    char_value = parse_hex_char_(**str);
+    for (; char_value >= 0; char_value = parse_hex_char_(**str)) {
         mpv_char = create_mpt(char_value);
         shifted = mpt_shift(target, 4, 1);
         added = mpt_add(shifted, mpv_char);
         mpt_free(&mpv_char);
         mpt_free(&shifted);
-        mpt_free(&target);
-        target = added;
-        added = NULL;
+        replace_mpt(&target, &added);
 
         if (!target) {
             goto clean_and_exit;
         }
-    }
 
-    if (mpt_is_zero(target) == 1) {
-        goto clean_and_exit;
+        ++(*str);
     }
 
     if (msb_set) {
@@ -214,9 +206,7 @@ mpt *mpt_parse_str_hex(const char str[]) {
 
     if (negative) {
         mpv_negative = mpt_negate(target);
-        mpt_free(&target);
-        target = mpv_negative;
-        mpv_negative = NULL;
+        replace_mpt(&target, &mpv_negative);
     }
 
   clean_and_exit:
@@ -226,13 +216,48 @@ mpt *mpt_parse_str_hex(const char str[]) {
     return target;
 }
 
-mpt *mpt_parse_str(const char str[], const enum bases base) {
+mpt *mpt_parse_str(const char **str) {
+    int is_negative = 0;
+    char c;
     str_parser parser;
-    switch (base) {
-        case bin: parser = mpt_parse_str_bin; break;
-        case dec: parser = mpt_parse_str_dec; break;
-        case hex: parser = mpt_parse_str_hex; break;
-        default:  return NULL;
+    mpt *new, *mpv_negative;
+    new = mpv_negative = NULL;
+    if (!str || !*str) {
+        return NULL;
     }
-    return parser(str);
+    c = **str;
+
+    if (c == '-') {
+        ++(*str);
+        c = **str;
+        is_negative = 1;
+        if (c == ' ') {
+            return NULL;
+        }
+    }
+
+    if (c == '0' && *(*str + 1) == 'b') {
+        parser = mpt_parse_str_bin;
+        *str += 2;
+    }
+    else if (c == '0' && *(*str + 1) == 'x') {
+        parser = mpt_parse_str_hex;
+        *str += 2;
+    }
+    else if (c >= '0' && c <= '9') {
+        parser = mpt_parse_str_dec;
+    }
+    else {
+        return NULL;
+    }
+
+    new = parser(str);
+
+    if (is_negative) {
+        mpv_negative = mpt_negate(new);
+        mpt_free(&new);
+        return mpv_negative;
+    }
+
+    return new;
 }

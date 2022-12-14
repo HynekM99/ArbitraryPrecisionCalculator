@@ -4,7 +4,7 @@
 #define BITS_IN_BYTE 8
 #define BITS_IN_NIBBLE 4
 
-#include "vector.h"
+#include "../vector.h"
 
 enum bases { bin = 2, dec = 10, hex = 16 };
 

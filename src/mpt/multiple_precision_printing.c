@@ -45,6 +45,11 @@ void mpt_print_dec(const mpt *mpv) {
         return;
     }
 
+    if (mpt_is_zero(mpv) == 1) {
+        printf("0");
+        return;
+    }
+
     ten = create_mpt(10);
     str = vector_allocate(sizeof(char), NULL);
     if (!ten) {

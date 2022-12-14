@@ -244,6 +244,8 @@ mpt *mpt_optimize(const mpt *orig) {
     }
 
     return new;
+
+    #undef EXIT_IF_NOT
 }
 
 void mpt_free(mpt **mpv) {

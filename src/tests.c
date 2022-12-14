@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "mpt.h"
-
-typedef mpt* (*bi_function)(const mpt *, const mpt *);
-typedef mpt* (*un_function)(const mpt *);
+#include "mpt/mpt.h"
+#include "shunting_yard.h"
 
 typedef void (*test)();
 
@@ -16,13 +14,13 @@ int assert_equals(const mpt *mpv_test_res, const mpt *mpv_true_res) {
     return 0;
 } 
 
-void test_bi(const bi_function func, const char value_a[], const char value_b[], const char true_value[]) {
+void test_bi(const bi_function func, const char *value_a, const char *value_b, const char *true_value) {
     mpt *mpv_a, *mpv_b, *mpv_test_res, *mpv_true_res;
     mpv_a = mpv_b = mpv_test_res = mpv_true_res = NULL;
 
-    mpv_a = mpt_parse_str(value_a, dec);
-    mpv_b = mpt_parse_str(value_b, dec);
-    mpv_true_res = mpt_parse_str(true_value, dec);
+    mpv_a = mpt_parse_str(&value_a);
+    mpv_b = mpt_parse_str(&value_b);
+    mpv_true_res = mpt_parse_str(&true_value);
     mpv_test_res = func(mpv_a, mpv_b);
 
     assert_equals(mpv_test_res, mpv_true_res);
@@ -33,12 +31,12 @@ void test_bi(const bi_function func, const char value_a[], const char value_b[],
     mpt_free(&mpv_true_res);
 }
 
-void test_un(const un_function func, const char value[], const char true_value[]) {
+void test_un(const un_function func, const char *value, const char *true_value) {
     mpt *mpv, *mpv_test_res, *mpv_true_res;
     mpv = mpv_test_res = mpv_true_res = NULL;
 
-    mpv = mpt_parse_str(value, dec);
-    mpv_true_res = mpt_parse_str(true_value, dec);
+    mpv = mpt_parse_str(&value);
+    mpv_true_res = mpt_parse_str(&true_value);
     mpv_test_res = func(mpv);
 
     assert_equals(mpv_test_res, mpv_true_res);
@@ -126,8 +124,8 @@ void test_pow_2() {
 }
 
 void test_pow_3() {
-    char value_base[100] =  "-2";
-    char value_exp[100] =  "-8";
+    char value_base[100] =  "-66679278278920452";
+    char value_exp[100] =  "-877508928346509";
     char true_value[100] =  "0";
     test_bi(mpt_pow, value_base, value_exp, true_value);
 }
@@ -150,26 +148,10 @@ void test_fac_3() {
     test_un(mpt_factorial, value, true_value);
 }
 
-void test_print_bin() {
-    char value_dec[1000] = "1010111001011100101000100101011010101111101010100000001101100";
-    mpt *mpv = mpt_parse_str(value_dec, bin);
-    mpt_print(mpv, bin);
-    printf("\n");
-    mpt_free(&mpv);
-}
-
-void test_print_dec() {
-    char value_dec[1000] = "-4098000023456787656848390217408925789234789623897410298375465667576568768767860760867545453423121327";
-    mpt *mpv = mpt_parse_str(value_dec, dec);
+void test_parse() {
+    const char *value = "0x0afadf7868373875afedbcddcbad";
+    mpt *mpv = mpt_parse_str(&value);
     mpt_print(mpv, dec);
-    printf("\n");
-    mpt_free(&mpv);
-}
-
-void test_print_hex() {
-    char value_dec[1000] = "-80";
-    mpt *mpv = mpt_parse_str(value_dec, hex);
-    mpt_print(mpv, hex);
     printf("\n");
     mpt_free(&mpv);
 }
@@ -180,8 +162,58 @@ void run_tests(const char name[], const test tests[], const size_t count) {
     printf("%s\n", name);
     for (i = 0; i < count; ++i) {
         printf("%li ... ", i + 1);
-        (tests[i])();
+        tests[i]();
     }
+}
+
+stack *vector_to_stack(vector_type **v) {
+    size_t i = 0;
+    stack *s = NULL;
+    if (!v || !*v) {
+        return NULL;
+    }
+
+    s = stack_create(vector_count(*v), (*v)->item_size);
+    if (!s) {
+        return NULL;
+    }
+
+    for (i = 0; i < vector_count(*v); ++i) {
+        if (!stack_push(s, vector_at(*v, vector_count(*v) - i - 1))) {
+            stack_free(&s);
+            return NULL;
+        }
+    }
+
+    (*v)->deallocator = NULL;
+    vector_deallocate(v);
+    return s;
+}
+
+void test_shunting() {
+    const char *str = "5939875389* 0b10010101/ (0x1 -0b01)\000";
+    vector_type *rpn_str = NULL;
+    vector_type *vector_values = NULL;
+    stack *values = NULL;
+    mpt *result = NULL;
+
+    int i = shunt(str, &rpn_str, &vector_values);
+    if (!i) {
+        goto clean_and_exit;
+    }
+
+    values = vector_to_stack(&vector_values);
+    result = evaluate_rpn(rpn_str, values);
+
+    mpt_print(result, hex);
+    printf("\n");
+
+  clean_and_exit:
+    vector_deallocate(&rpn_str);
+    vector_deallocate(&vector_values);
+    stack_free(&values);
+    mpt_free(&result);
+    free(vector_values);
 }
 
 int main() {
@@ -198,9 +230,8 @@ int main() {
     run_tests("Modulo tests", mod_tests, sizeof(mod_tests) / sizeof(test));
     run_tests("Power tests", pow_tests, sizeof(pow_tests) / sizeof(test));
     run_tests("Factorial tests", fac_tests, sizeof(fac_tests) / sizeof(test));
-    test_print_bin();
-    test_print_dec();
-    test_print_hex();
+    test_parse();
+    test_shunting();
 
     return EXIT_SUCCESS;
 }
