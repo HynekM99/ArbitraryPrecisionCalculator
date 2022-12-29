@@ -19,14 +19,17 @@ int evaluate_command(const char *input, enum bases *out) {
         return QUIT_CODE;
     }
     if (strcmp(input, "bin") == 0) {
+        printf("bin\n");
         *out = bin;
         return 1;
     }
     if (strcmp(input, "dec") == 0) {
+        printf("dec\n");
         *out = dec;
         return 1;
     }
     if (strcmp(input, "hex") == 0) {
+        printf("hex\n");
         *out = hex;
         return 1;
     }
@@ -95,7 +98,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    printf("\n");
     fclose(stream);
     return EXIT_SUCCESS;
 }

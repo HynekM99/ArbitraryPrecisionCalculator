@@ -19,7 +19,7 @@ const size_t BI_OPERATORS_COUNT = sizeof(BI_OPERATORS) / sizeof(*BI_OPERATORS);
  * @brief Pole dostupných jedno-operandových operací a konstanta, která udržuje jejich počet.
  */
 const un_func_oper_type UN_OPERATORS[] = {
-    { RPN_UNARY_MINUS_SYMBOL, mpt_negate, 5, right }, 
+    { RPN_UNARY_MINUS_SYMBOL, mpt_negate, 3, right }, 
     { '!', mpt_factorial, 4, left }
 };
 const size_t UN_OPERATORS_COUNT = sizeof(UN_OPERATORS) / sizeof(*UN_OPERATORS);
