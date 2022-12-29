@@ -4,121 +4,98 @@
 #include "mpt/mpt.h"
 #include "stack/stack.h"
 #include "operators.h"
+#include "shunting_yard.h"
 
 #define MAX_INPUT_LENGTH 255
 
-/**
- * @brief Funkce slouží k vyhodnocení výrazu zapsaného v reverzní polské notaci (RPN).
- * @param input Zpracovávaný výraz.
- * @param result Ukazatel na paměť, kam bude zkopírován výsledek výrazu.
- * @return int 1, pokud zpracování proběhlo v pořádku, jinak 0.
- */
-int evalutate_rpn_expression_3(const char *input, mpt **result) {
-    size_t i, input_length;
-    stack *s = NULL;
-    mpt *a, *b, *temp;
-    bi_function bi_func_handler = NULL;
-    un_function un_func_handler = NULL;
+#define QUIT_CODE -1
 
-    #define EXIT_IF_NOT(expression)   \
-        if (!(expression)) {            \
-            stack_free(&s);             \
-            return 0;                   \
+int evaluate_command(const char *input, enum bases *out) {
+    vector_type *rpn_str = NULL;
+    stack *values = NULL;
+    mpt *result = NULL;
+
+    if (strcmp(input, "quit") == 0) {
+        return QUIT_CODE;
+    }
+    if (strcmp(input, "bin") == 0) {
+        *out = bin;
+        return 1;
+    }
+    if (strcmp(input, "dec") == 0) {
+        *out = dec;
+        return 1;
+    }
+    if (strcmp(input, "hex") == 0) {
+        *out = hex;
+        return 1;
+    }
+    if (strcmp(input, "out") == 0) {
+        switch (*out) {
+            case bin: printf("bin\n"); break;
+            case dec: printf("dec\n"); break;
+            case hex: printf("hex\n"); break;
+            default:  break;
         }
-
-    EXIT_IF_NOT(input && result);
-
-    input_length = strlen(input);
-    EXIT_IF_NOT(input_length != 0);
-
-    s = stack_create(input_length, sizeof(mpt *));
-    EXIT_IF_NOT(s);
-
-    for (i = 0; i < input_length; ++i) {
-        if (input[i] >= '0' && input[i] <= '9') {
-            temp = create_mpt(input[i] - '0');
-            stack_push(s, &temp);
-        }
-        else {
-            if (is_bi_func_operator(input[i])) {
-                bi_func_handler = get_bi_func_operator_handler(input[i]);
-            }
-            if (is_un_func_operator(input[i])) {
-                un_func_handler = get_un_func_operator_handler(input[i]);
-            }
-            EXIT_IF_NOT(bi_func_handler || un_func_handler);
-
-            if (un_func_handler) {
-                EXIT_IF_NOT(stack_pop(s, &a));
-                temp = un_func_handler(a);
-            }
-            else if (bi_func_handler) {
-                EXIT_IF_NOT(stack_pop(s, &b) && stack_pop(s, &a));
-                temp = bi_func_handler(a, b);
-            }
-            
-            stack_push(s, &temp);   /* Přidání kontroly návratové hodnoty funkce stack_push by při použití makra bylo celkem bezbolestné. */
-            bi_func_handler = NULL;
-            un_func_handler = NULL;
-        }
+        return 1;
     }
 
-    EXIT_IF_NOT(stack_item_count(s) == 1);
+    if (shunt(input, &rpn_str, &values)) {
+        result = evaluate_rpn(rpn_str, values);
+        if (!result) {
+            printf("Math error\n");
+            return 0;
+        }
 
-    stack_pop(s, result);
-    stack_free(&s);
-    return 1;
-
-    #undef EXIT_IF_NOT  /* Zneplatním makro, aby jej nebylo možné použít v dalších funkcích. */
+        mpt_print(result, *out);
+        vector_deallocate(&rpn_str);
+        stack_free(&values);
+        mpt_free(&result);
+        printf("\n");
+        return 1;
+    }
+    else {
+        printf("Invalid command \"%s\"!\n", input);
+        return 1;
+    }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     enum bases out = dec;
     char input[MAX_INPUT_LENGTH];
-    mpt  *result;
+    FILE *stream;
 
-    printf("Enter \"quit\" to exit this amazing calculator.\n\n");
+    if (argc < 2) {
+        stream = stdin;
+    }
+    else if (argc == 2) {
+        stream = fopen(argv[1], "r");
+        if (!stream) {
+            printf("Invalid input file!");
+            return EXIT_FAILURE;
+        }
+    }
+    else {
+        printf("Usage: %s <file.txt>", __FILE__);
+        return EXIT_FAILURE;
+    }
 
     for (;;) {
         printf("> ");
-        fgets(input, MAX_INPUT_LENGTH, stdin);
-        input[strcspn(input, "\r\n")] = '\000';
-
-        if (strcmp(input, "quit") == 0) {
+        if (!fgets(input, MAX_INPUT_LENGTH, stream)) {
             break;
         }
-        if (strcmp(input, "bin") == 0) {
-            out = bin;
-            continue;
-        }
-        if (strcmp(input, "dec") == 0) {
-            out = dec;
-            continue;
-        }
-        if (strcmp(input, "hex") == 0) {
-            out = hex;
-            continue;
-        }
-        if (strcmp(input, "out") == 0) {
-            switch (out) {
-                case bin: printf("bin\n"); break;
-                case dec: printf("dec\n"); break;
-                case hex: printf("hex\n"); break;
-                default:  break;
-            }
-            continue;
-        }
 
-        if (evalutate_rpn_expression_3(input, &result)) {
-            if (!result) {
-                printf("Math error");
-            }
-            mpt_print(result, out);
-            printf("\n");
+        input[strcspn(input, "\r\n")] = '\000';
+        if (argc == 2) {
+            printf("%s\n", input);
         }
-        else printf("syntax error\n");
+        if (evaluate_command(input, &out) == QUIT_CODE) {
+            break;
+        }
     }
 
-    printf("You are leaving an awesome calculator. Be back soon!\n");
+    printf("\n");
+    fclose(stream);
     return EXIT_SUCCESS;
 }

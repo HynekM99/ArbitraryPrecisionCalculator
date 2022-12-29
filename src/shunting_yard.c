@@ -1,9 +1,34 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "shunting_yard.h"
 
 static void mpt_free_wrapper_(void *poor) {
     mpt_free(poor);
+}
+
+static stack *vector_to_stack_(vector_type **v) {
+    size_t i = 0;
+    stack *s = NULL;
+    if (!v || !*v) {
+        return NULL;
+    }
+
+    s = stack_create(vector_count(*v), (*v)->item_size);
+    if (!s) {
+        return NULL;
+    }
+
+    for (i = 0; i < vector_count(*v); ++i) {
+        if (!stack_push(s, vector_at(*v, vector_count(*v) - i - 1))) {
+            stack_free(&s);
+            return NULL;
+        }
+    }
+
+    (*v)->deallocator = NULL;
+    vector_deallocate(v);
+    return s;
 }
 
 static size_t get_operator_count_(const char *str) {
@@ -33,6 +58,7 @@ static int push_operator_(const char operator, vector_type *rpn_str, stack *oper
     un_func_oper_type *un_operator, *prev_un_operator;
     bi_operator = prev_bi_operator = NULL;
     un_operator = prev_un_operator = NULL;
+    
     if (operator == '!') {
         return vector_push_back(rpn_str, &operator);
     }
@@ -99,20 +125,27 @@ static int push_operator_(const char operator, vector_type *rpn_str, stack *oper
     return 0;
 }
 
-int shunt(const char *str, vector_type **rpn_str, vector_type **values) {
+int shunt(const char *str, vector_type **rpn_str, stack **values) {
     const char *orig_ptr = str;
-    char c, last_operator = 0, minus;
+    char c, last_operator = 1, minus;
+    size_t operator_count = 0;
     stack *operator_stack = NULL;
+    vector_type *vector_values = NULL;
     mpt *parsed_value = NULL;
     if (!str || str[0] == '\000' || !rpn_str || !values) {
         return 0;
     }
     
-    operator_stack = stack_create(get_operator_count_(str), sizeof(char));
-    *rpn_str = vector_allocate(sizeof(char), NULL);
-    *values = vector_allocate(sizeof(mpt *), mpt_free_wrapper_);
+    operator_count = get_operator_count_(str);
+    if (operator_count == 0) {
+        operator_count = 1;
+    }
 
-    if (!operator_stack || !*rpn_str || !*values) {
+    operator_stack = stack_create(operator_count, sizeof(char));
+    vector_values = vector_allocate(sizeof(mpt *), mpt_free_wrapper_);
+    *rpn_str = vector_allocate(sizeof(char), NULL);
+
+    if (!operator_stack || !*rpn_str || !vector_values) {
         goto clean_and_exit;
     }
 
@@ -132,10 +165,6 @@ int shunt(const char *str, vector_type **rpn_str, vector_type **values) {
                 minus = '-';
             }
 
-            if (minus == RPN_UNARY_MINUS_SYMBOL && 
-                *(str + 1) == ' ') {
-                goto clean_and_exit;
-            }
 
             if (!push_operator_(minus, *rpn_str, operator_stack)) {
                 goto clean_and_exit;
@@ -143,8 +172,11 @@ int shunt(const char *str, vector_type **rpn_str, vector_type **values) {
         }
         else if (*str >= '0' && *str <= '9') {
             parsed_value = mpt_parse_str(&str);
-            if (!push_parsed_value_(parsed_value, *rpn_str, *values)) {
+            if (!push_parsed_value_(parsed_value, *rpn_str, vector_values)) {
                 mpt_free(&parsed_value);
+                goto clean_and_exit;
+            }
+            if (last_operator == 0) {
                 goto clean_and_exit;
             }
             last_operator = 0;
@@ -170,13 +202,18 @@ int shunt(const char *str, vector_type **rpn_str, vector_type **values) {
         }
     }
 
+    *values = vector_to_stack_(&vector_values);
+    if (!*values) {
+        goto clean_and_exit;
+    }
+
     stack_free(&operator_stack);
     return 1;
     
   clean_and_exit:
     stack_free(&operator_stack);
     vector_deallocate(rpn_str);
-    vector_deallocate(values);
+    vector_deallocate(&vector_values);
     return 0;
 }
 

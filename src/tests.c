@@ -166,54 +166,26 @@ void run_tests(const char name[], const test tests[], const size_t count) {
     }
 }
 
-stack *vector_to_stack(vector_type **v) {
-    size_t i = 0;
-    stack *s = NULL;
-    if (!v || !*v) {
-        return NULL;
-    }
-
-    s = stack_create(vector_count(*v), (*v)->item_size);
-    if (!s) {
-        return NULL;
-    }
-
-    for (i = 0; i < vector_count(*v); ++i) {
-        if (!stack_push(s, vector_at(*v, vector_count(*v) - i - 1))) {
-            stack_free(&s);
-            return NULL;
-        }
-    }
-
-    (*v)->deallocator = NULL;
-    vector_deallocate(v);
-    return s;
-}
-
 void test_shunting() {
-    const char *str = "5939875389* 0b10010101/ (0x1 -0b01)\000";
+    const char *str = "7+4*5\000";
     vector_type *rpn_str = NULL;
-    vector_type *vector_values = NULL;
     stack *values = NULL;
     mpt *result = NULL;
 
-    int i = shunt(str, &rpn_str, &vector_values);
+    int i = shunt(str, &rpn_str, &values);
     if (!i) {
         goto clean_and_exit;
     }
 
-    values = vector_to_stack(&vector_values);
     result = evaluate_rpn(rpn_str, values);
 
-    mpt_print(result, hex);
+    mpt_print(result, dec);
     printf("\n");
 
   clean_and_exit:
     vector_deallocate(&rpn_str);
-    vector_deallocate(&vector_values);
     stack_free(&values);
     mpt_free(&result);
-    free(vector_values);
 }
 
 int main() {

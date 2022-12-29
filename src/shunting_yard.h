@@ -8,7 +8,7 @@
 #include "operators.h"
 #include "mpt/mpt.h"
 
-int shunt(const char *str, vector_type **rpn_str, vector_type **values);
+int shunt(const char *str, vector_type **rpn_str, stack **values);
 
 mpt *evaluate_rpn(vector_type *rpn_str, stack *values);
 
