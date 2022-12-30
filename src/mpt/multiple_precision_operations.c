@@ -351,6 +351,9 @@ mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent) {
     if (mpt_is_negative(mpv_exponent)) {
         return create_mpt(0);
     }
+    if (mpt_is_zero(mpv_exponent)) {
+        return create_mpt(1);
+    }
 
     exp_sub = clone_mpt(mpv_exponent);
     new = clone_mpt(mpv_base);
