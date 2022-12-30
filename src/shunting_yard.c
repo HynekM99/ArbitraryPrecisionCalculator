@@ -131,8 +131,10 @@ static char *find_closing_bracket_(const char *str) {
 
 static int shunt_next_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
     char minus, *closing_bracket = NULL;
+    int res;
+
     if (**str == ' ') {
-        return 1;
+        return SYNTAX_OK;
     }
 
     if (**str == '-') {
@@ -146,18 +148,19 @@ static int shunt_next_char_(const char **str, char *last_operator, vector_type *
 
             ++*str;
             if (**str == ' ') { /* 4^- 2 ... Syntax error */
-                return 0;
+                return SYNTAX_ERROR;
             }
 
             if (**str == '(') {
                 closing_bracket = find_closing_bracket_(*str + 1);
                 if (!closing_bracket) {
-                    return 0;
+                    return SYNTAX_ERROR;
                 }
 
                 for (; **str != '\000' && **str != '\n' && *str <= closing_bracket; ++*str) {
-                    if (!shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values)) {
-                        return 0;
+                    res = shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values);
+                    if (res != SYNTAX_OK) {
+                        return res;
                     }
                 }
             }
@@ -169,58 +172,66 @@ static int shunt_next_char_(const char **str, char *last_operator, vector_type *
             }
 
             for (; **str != '\000' && **str != '\n' && **str == '!'; ++*str) {
-                if (!shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values)) {
-                    return 0;
+                res = shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values);
+                if (res != SYNTAX_OK) {
+                    return res;
                 }
             }
             --*str;
 
-            return vector_push_back(rpn_str, &minus);
+            if (!vector_push_back(rpn_str, &minus)) {
+                return ERROR;
+            }
+            return SYNTAX_OK;
         }
         else {
             minus = '-';
         }
         
         if (minus == RPN_UNARY_MINUS_SYMBOL && *(*str + 1) == ' ') {
-            return 0;
+            return SYNTAX_ERROR;
         }
 
         *last_operator = minus;
 
         if (!push_operator_(minus, rpn_str, operator_stack)) {
-            return 0;
+            return ERROR;
         }
     }
     else if (**str >= '0' && **str <= '9') {
         if (!shunt_value_(str, last_operator, rpn_str, vector_values)) {
-            return 0;
+            return ERROR;
         }
+    }
+    else if (**str == RPN_UNARY_MINUS_SYMBOL) {
+        return INVALID_SYMBOL;
     }
     else if (get_func_operator(**str) || **str == '(' || **str == ')') {
         if (**str == '!') {
             if (*last_operator == 0 || *(*str - 1) == ' ') {
-                return 0;
+                return SYNTAX_ERROR;
             }
         }
         if (!push_operator_(**str, rpn_str, operator_stack)) {
-            return 0;
+            return ERROR;
         }
         *last_operator = **str;
     }
     else {
-        return 0;
+        return INVALID_SYMBOL;
     }
 
-    return 1;
+    return SYNTAX_OK;
 }
 
 int shunt(const char *str, vector_type **rpn_str, stack **values) {
+    int res;
     char c, last_operator = 0;
     size_t operator_count = 0;
     stack *operator_stack = NULL;
     vector_type *vector_values = NULL;
     if (!str || str[0] == '\000' || !rpn_str || !values) {
-        return 0;
+        return ERROR;
     }
     
     operator_count = get_operator_count_(str);
@@ -233,11 +244,13 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
     *rpn_str = vector_allocate(sizeof(char), NULL);
 
     if (!operator_stack || !*rpn_str || !vector_values) {
+        res = ERROR;
         goto clean_and_exit;
     }
 
     for (; *str != '\000' && *str != '\n'; ++str) {
-        if (!shunt_next_char_(&str, &last_operator, *rpn_str, operator_stack, vector_values)) {
+        res = shunt_next_char_(&str, &last_operator, *rpn_str, operator_stack, vector_values);
+        if (res != SYNTAX_OK) {
             goto clean_and_exit;
         }
     }
@@ -245,23 +258,30 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
     while (stack_item_count(operator_stack) > 0) {
         if (!stack_pop(operator_stack, &c) ||
             !vector_push_back(*rpn_str, &c)) {
+            res = ERROR;
             goto clean_and_exit;
         }
     }
 
+    if (vector_isempty(vector_values)) {
+        res = SYNTAX_ERROR;
+        goto clean_and_exit;
+    }
+
     *values = vector_to_stack_(&vector_values);
     if (!*values) {
+        res = ERROR;
         goto clean_and_exit;
     }
 
     stack_free(&operator_stack);
-    return 1;
+    return res;
     
   clean_and_exit:
     stack_free(&operator_stack);
     vector_deallocate(rpn_str);
     vector_deallocate(&vector_values);
-    return 0;
+    return res;
 }
 
 mpt *evaluate_rpn(vector_type *rpn_str, stack *values) {

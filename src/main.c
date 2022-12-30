@@ -14,6 +14,7 @@ int evaluate_command(const char *input, enum bases *out) {
     vector_type *rpn_str = NULL;
     stack *values = NULL;
     mpt *result = NULL;
+    int shunt_result;
 
     if (strcmp(input, "quit") == 0) {
         return QUIT_CODE;
@@ -43,24 +44,32 @@ int evaluate_command(const char *input, enum bases *out) {
         return 1;
     }
 
-    if (shunt(input, &rpn_str, &values)) {
-        result = evaluate_rpn(rpn_str, values);
-        if (!result) {
-            printf("Math error\n");
-            return 0;
-        }
+    shunt_result = shunt(input, &rpn_str, &values);
+    switch (shunt_result) {
+        case INVALID_SYMBOL: 
+            printf("Invalid command \"%s\"!\n", input);
+            return 1;
+        case SYNTAX_ERROR:
+            printf("Syntax error!\n");
+            return 1;
+        case ERROR:
+            printf("Error!\n");
+            return 1;
+        default: break;
+    }
+    
+    result = evaluate_rpn(rpn_str, values);
+    if (!result) {
+        printf("Math error\n");
+        return 1;
+    }
 
-        mpt_print(result, *out);
-        vector_deallocate(&rpn_str);
-        stack_free(&values);
-        mpt_free(&result);
-        printf("\n");
-        return 1;
-    }
-    else {
-        printf("Invalid command \"%s\"!\n", input);
-        return 1;
-    }
+    mpt_print(result, *out);
+    vector_deallocate(&rpn_str);
+    stack_free(&values);
+    mpt_free(&result);
+    printf("\n");
+    return 1;
 }
 
 int main(int argc, char *argv[]) {
