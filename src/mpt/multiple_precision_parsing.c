@@ -20,20 +20,20 @@ static int parse_bin_char_(const char c) {
 }
 
 static int parse_dec_char_(const char c) {
-    if (c <= '9') {
+    if (c >= '0' && c <= '9') {
         return c - '0';
     } 
     return -1;
 }
 
 static int parse_hex_char_(const char c) {
-    if (c <= '9') {
+    if (c >= '0' && c <= '9') {
         return c - '0';
     }
-    if (c <= 'F') {
+    if (c >= 'A' && c <= 'F') {
         return c - 'A' + 10;
     }
-    if (c <= 'f') {
+    if (c >= 'a' && c <= 'f') {
         return c - 'a' + 10;
     }
     return -1;
