@@ -17,22 +17,14 @@ enum associativity { left, right };
 /**
  * @brief Struktura, která obaluje operátor a k němu přidruženou obslužnou funkci.
  */
-typedef struct bi_func_oper_type_ {
+typedef struct func_oper_type_ {
     char operator;          /*!< Znak, kterým je operace popsána. */
-    bi_function handler;     /*!< Přidružená aritmetická operace. */
+    bi_function bi_handler;     /*!< Přidružená binární aritmetická operace. */
+    un_function un_handler;     /*!< Přidružená binární aritmetická operace. */
     size_t precedence;
     enum associativity assoc;
-} bi_func_oper_type;
+} func_oper_type;
 
-typedef struct un_func_oper_type_ {
-    char operator;          /*!< Znak, kterým je operace popsána. */
-    un_function handler;     /*!< Přidružená aritmetická operace. */
-    size_t precedence;
-    enum associativity assoc;
-} un_func_oper_type;
-
-bi_func_oper_type *get_bi_func_operator(const char operator);
-
-un_func_oper_type *get_un_func_operator(const char operator);
+const func_oper_type *get_func_operator(const char operator);
 
 #endif

@@ -71,6 +71,10 @@ size_t stack_item_count(const stack *s) {
     return s->sp;
 }
 
+int stack_isempty(const stack *s) {
+    return stack_item_count(s) == 0;
+}
+
 void stack_free(stack **s) {
     if (!s || !*s) {
         return;

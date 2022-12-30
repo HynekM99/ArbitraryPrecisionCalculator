@@ -61,6 +61,13 @@ int stack_head(const stack *s, void *item);
 size_t stack_item_count(const stack *s);
 
 /**
+ * @brief Říká, zda je zadaný zásobník prázdný nebo obsahuje nějaké prvky.
+ * @param v Ukazatel na zásobník.
+ * @return int 1, pokud je zásobník prázdný, jinak 0.
+ */
+int stack_isempty(const stack *s);
+
+/**
  * @brief Funkce pro uvolnění zásobníkové struktury z paměti.
  * @param ss Ukazatel na ukazatel na zásobník, který bude uvolněn.
  */

@@ -34,9 +34,7 @@ static stack *vector_to_stack_(vector_type **v) {
 static size_t get_operator_count_(const char *str) {
     size_t i = 0;
     for (; *str != '\000' && *str != '\n'; ++str) {
-        if (get_bi_func_operator(*str) || 
-            get_un_func_operator(*str) ||
-            *str == '(') {
+        if (get_func_operator(*str) || *str == '(') {
             ++i;
         }
     }
@@ -52,86 +50,62 @@ static int push_parsed_value_(const mpt *mpv, vector_type *rpn_str, vector_type 
 
 static int push_operator_(const char operator, vector_type *rpn_str, stack *operator_stack) {
     char c = 0;
-    enum associativity assoc = left;
-    size_t precedence, prev_precedence;
-    bi_func_oper_type *bi_operator, *prev_bi_operator;
-    un_func_oper_type *un_operator, *prev_un_operator;
-    bi_operator = prev_bi_operator = NULL;
-    un_operator = prev_un_operator = NULL;
-    
-    if (operator == '!') {
-        return vector_push_back(rpn_str, &operator);
-    }
-    if (operator == '(') {
-        return stack_push(operator_stack, &operator);
-    }
+    const func_oper_type *o1, *o2;
+    o1 = o2 = NULL;
 
-    bi_operator = get_bi_func_operator(operator);
-    un_operator = get_un_func_operator(operator);
+    #define EXIT_IF_NOT(v) \
+        if (!(v)) { \
+            return 0; \
+        }
 
-    if (bi_operator || un_operator) {
-        if (bi_operator && !un_operator) {
-            precedence = bi_operator->precedence;
-            assoc = bi_operator->assoc;
-        }
-        else if (un_operator && !bi_operator) {
-            precedence = un_operator->precedence;
-            assoc = un_operator->assoc;
-        }
-        else {
+    switch (operator) {
+        case '!': return vector_push_back(rpn_str, &operator);
+        case '(': return stack_push(operator_stack, &operator);
+        case ')': 
+            while (!stack_isempty(operator_stack)) {
+                EXIT_IF_NOT(stack_pop(operator_stack, &c));
+                if (c == '(') {
+                    return 1;
+                }
+                EXIT_IF_NOT(vector_push_back(rpn_str, &c));
+            }
             return 0;
-        }
-
-        while (stack_item_count(operator_stack) > 0) {
-            if (!stack_head(operator_stack, &c)) {
-                return 0;
-            }
-            if (c == '(') {
-                break;
-            }
-
-            prev_bi_operator = get_bi_func_operator(c);
-            prev_un_operator = get_un_func_operator(c);
-
-            prev_precedence = prev_bi_operator ? prev_bi_operator->precedence : prev_un_operator->precedence;
-
-            if (prev_precedence < precedence ||
-                (prev_precedence == precedence && assoc == right)) {
-                break;
-            }
-
-            if (!stack_pop(operator_stack, &c) ||
-                !vector_push_back(rpn_str, &c)) {
-                return 0;
-            }
-        }
-
-        return stack_push(operator_stack, &operator);
+        default: break;
     }
-    else if (operator == ')') {
-        while (stack_item_count(operator_stack) > 0) {
-            if (!stack_pop(operator_stack, &c)) {
-                return 0;
-            }
-            if (c == '(') {
-                return 1;
-            }
-            if (!vector_push_back(rpn_str, &c)) {
-                return 0;
-            }
+
+    o1 = get_func_operator(operator);
+    EXIT_IF_NOT(o1)
+
+    while (!stack_isempty(operator_stack)) {
+        EXIT_IF_NOT(stack_head(operator_stack, &c));
+
+        if (c == '(') {
+            return stack_push(operator_stack, &operator);
         }
-        return 0;
+
+        o2 = get_func_operator(c);
+
+        if ((o2->precedence == o1->precedence && o1->assoc == right) ||
+            (o1->precedence > o2->precedence)) {
+            return stack_push(operator_stack, &operator);
+        }
+
+        EXIT_IF_NOT(stack_pop(operator_stack, &c) && vector_push_back(rpn_str, &c));
     }
-    return 0;
+
+    return stack_push(operator_stack, &operator);
+
+    #undef EXIT_IF_NOT
 }
 
 static int shunt_value_(const char **str, char *last_operator, vector_type *rpn_str, vector_type *vector_values) {
-    mpt *parsed_value = NULL;
-    parsed_value = mpt_parse_str(str);
+    mpt *parsed_value = mpt_parse_str(str);
+
     if (!push_parsed_value_(parsed_value, rpn_str, vector_values)) {
         mpt_free(&parsed_value);
         return 0;
     }
+
     *last_operator = RPN_VALUE_SYMBOL;
     --*str;
 
@@ -148,61 +122,60 @@ static char *find_closing_bracket_(const char *str) {
         }
 
         if (l_brackets == r_brackets) {
-            return str;
+            return (char *)str;
         }
     }
 
     return NULL;
 }
 
-static int shunt_next_char_(const char **str, const char *until, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
+static int shunt_next_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
     char minus, *closing_bracket = NULL;
-
     if (**str == ' ') {
         return 1;
     }
-    else if (**str == '-') {
-        if (stack_item_count(operator_stack) == 0 && vector_isempty(vector_values)) {
+
+    if (**str == '-') {
+        if (*last_operator == 0 ||
+            *last_operator == '-' || *last_operator == '(' || 
+            *last_operator == '*' || *last_operator == '+') {
             minus = RPN_UNARY_MINUS_SYMBOL;
         }
         else if (*last_operator == '^') {
             minus = RPN_UNARY_MINUS_SYMBOL;
 
-            if (*(*str + 1) == '(') {
-                closing_bracket = find_closing_bracket_(*str + 2);
-                *str += 1;
+            ++*str;
+            if (**str == ' ') { /* 4^- 2 ... Syntax error */
+                return 0;
+            }
 
+            if (**str == '(') {
+                closing_bracket = find_closing_bracket_(*str + 1);
                 if (!closing_bracket) {
                     return 0;
                 }
 
                 for (; **str != '\000' && **str != '\n' && *str <= closing_bracket; ++*str) {
-                    if (until && *str <= until) {
-                        break;
-                    }
-                    if (!shunt_next_char_(str, closing_bracket, last_operator, rpn_str, operator_stack, vector_values)) {
+                    if (!shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values)) {
                         return 0;
                     }
                 }
+            }
+            else {
+                if (!shunt_value_(str, last_operator, rpn_str, vector_values)) {
+                    return 0;
+                }
+                ++*str;
+            }
 
-                if (!vector_push_back(rpn_str, &minus)) {
+            for (; **str != '\000' && **str != '\n' && **str == '!'; ++*str) {
+                if (!shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values)) {
                     return 0;
                 }
             }
-            else if (*(*str + 1) == ' ') {
-                return 0;
-            }
-            else if (!shunt_value_(str, last_operator, rpn_str, vector_values)) {
-                return 0;
-            }
-            *last_operator = minus;
-            return 1;
-        }
-        else if (*last_operator == '-' || 
-                *last_operator == '(' || 
-                *last_operator == '*' || 
-                *last_operator == '+') {
-            minus = RPN_UNARY_MINUS_SYMBOL;
+            --*str;
+
+            return vector_push_back(rpn_str, &minus);
         }
         else {
             minus = '-';
@@ -223,7 +196,12 @@ static int shunt_next_char_(const char **str, const char *until, char *last_oper
             return 0;
         }
     }
-    else if (get_bi_func_operator(**str) || get_un_func_operator(**str) || **str == '(' || **str == ')') {
+    else if (get_func_operator(**str) || **str == '(' || **str == ')') {
+        if (**str == '!') {
+            if (*last_operator == 0 || *(*str - 1) == ' ') {
+                return 0;
+            }
+        }
         if (!push_operator_(**str, rpn_str, operator_stack)) {
             return 0;
         }
@@ -259,7 +237,7 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
     }
 
     for (; *str != '\000' && *str != '\n'; ++str) {
-        if (!shunt_next_char_(&str, NULL, &last_operator, *rpn_str, operator_stack, vector_values)) {
+        if (!shunt_next_char_(&str, &last_operator, *rpn_str, operator_stack, vector_values)) {
             goto clean_and_exit;
         }
     }
@@ -291,64 +269,59 @@ mpt *evaluate_rpn(vector_type *rpn_str, stack *values) {
     size_t i;
     mpt *a, *b, *result;
     stack *stack_values = NULL;
-    bi_func_oper_type *bi_function = NULL;
-    un_func_oper_type *un_function = NULL;
+    const func_oper_type *function = NULL;
     a = b = result = NULL;
     if (!rpn_str || !values) {
         return NULL;
     }
 
+    #define EXIT_IF_NOT(v) \
+        if (!(v)) { \
+            return NULL; \
+        }
+
     stack_values = stack_create(stack_item_count(values), values->item_size);
-    if (!stack_values) {
-        return NULL;
-    }
+    EXIT_IF_NOT(stack_values);
 
     for (i = 0; i < vector_count(rpn_str); ++i) {
         c = *(char *)vector_at(rpn_str, i);
 
-        bi_function = get_bi_func_operator(c);
-        un_function = get_un_func_operator(c);
-
         if (c == RPN_VALUE_SYMBOL) {
-            if (!stack_pop(values, &a) || 
-                !stack_push(stack_values, &a)) {
-                return NULL;
-            }
+            EXIT_IF_NOT(stack_pop(values, &a) && stack_push(stack_values, &a));
+            continue;
         }
-        else if (bi_function) {
-            if (!stack_pop(stack_values, &b) ||
-                !stack_pop(stack_values, &a)) {
-                return NULL;
-            }
-            
-            result = bi_function->handler(a, b);
+
+        function = get_func_operator(c);
+        EXIT_IF_NOT(function);
+
+        if (function->bi_handler) {
+            EXIT_IF_NOT(stack_pop(stack_values, &b) && stack_pop(stack_values, &a));
+            result = function->bi_handler(a, b);
             mpt_free(&a);
             mpt_free(&b);
-            if (!result || !stack_push(stack_values, &result)) {
-                return NULL;
-            }
+
+            EXIT_IF_NOT(result && stack_push(stack_values, &result));
         }
-        else if (un_function) {
-            if (!stack_pop(stack_values, &a)) {
-                return NULL;
-            }
+        else if (function->un_handler) {
+            EXIT_IF_NOT(stack_pop(stack_values, &a));
             
-            result = un_function->handler(a);
+            result = function->un_handler(a);
             mpt_free(&a);
-            if (!result || !stack_push(stack_values, &result)) {
-                return NULL;
-            }
+
+            EXIT_IF_NOT(result && stack_push(stack_values, &result));
         }
         else {
             return NULL;
         }
     }
 
-    if (stack_item_count(stack_values) > 1) {
+    if (stack_item_count(stack_values) != 1) {
         return NULL;
     }
 
     stack_pop(stack_values, &result);
     stack_free(&stack_values);
     return result;
+
+    #undef EXIT_IF_NOT
 }
