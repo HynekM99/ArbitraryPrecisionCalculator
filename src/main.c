@@ -14,7 +14,7 @@ int evaluate_command(const char *input, enum bases *out) {
     vector_type *rpn_str = NULL;
     stack *values = NULL;
     mpt *result = NULL;
-    int shunt_result;
+    int res;
 
     if (strcmp(input, "quit") == 0) {
         return QUIT_CODE;
@@ -44,8 +44,8 @@ int evaluate_command(const char *input, enum bases *out) {
         return 1;
     }
 
-    shunt_result = shunt(input, &rpn_str, &values);
-    switch (shunt_result) {
+    res = shunt(input, &rpn_str, &values);
+    switch (res) {
         case INVALID_SYMBOL: 
             printf("Invalid command \"%s\"!\n", input);
             return 1;
@@ -53,14 +53,32 @@ int evaluate_command(const char *input, enum bases *out) {
             printf("Syntax error!\n");
             return 1;
         case ERROR:
-            printf("Error!\n");
+            printf("Error while shunting!\n");
             return 1;
         default: break;
     }
     
-    result = evaluate_rpn(rpn_str, values);
+    res = evaluate_rpn(&result, rpn_str, values);
+    switch (res) {
+        case SYNTAX_ERROR:
+            printf("Syntax error!\n");
+            return 1;
+        case MATH_ERROR:
+            printf("Math error!\n");
+            return 1;
+        case DIV_BY_ZERO:
+            printf("Division by zero!\n");
+            return 1;
+        case FACTORIAL_OF_NEGATIVE:
+            printf("Input of factorial must not be negative!\n");
+            return 1;
+        case ERROR:
+            printf("Error while evaluating!\n");
+            return 1;
+        default: break;
+    }
     if (!result) {
-        printf("Math error\n");
+        printf("Error!\n");
         return 1;
     }
 

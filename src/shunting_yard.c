@@ -284,64 +284,85 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
     return res;
 }
 
-mpt *evaluate_rpn(vector_type *rpn_str, stack *values) {
+int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
     char c;
     size_t i;
     mpt *a, *b, *result;
     stack *stack_values = NULL;
     const func_oper_type *function = NULL;
     a = b = result = NULL;
-    if (!rpn_str || !values) {
-        return NULL;
+    if (!dest || !rpn_str || !values) {
+        return ERROR;
     }
 
-    #define EXIT_IF_NOT(v) \
+    #define EXIT_IF_NOT(v, e) \
         if (!(v)) { \
-            return NULL; \
+            return e; \
         }
 
     stack_values = stack_create(stack_item_count(values), values->item_size);
-    EXIT_IF_NOT(stack_values);
+    EXIT_IF_NOT(stack_values, ERROR);
 
     for (i = 0; i < vector_count(rpn_str); ++i) {
         c = *(char *)vector_at(rpn_str, i);
 
         if (c == RPN_VALUE_SYMBOL) {
-            EXIT_IF_NOT(stack_pop(values, &a) && stack_push(stack_values, &a));
+            EXIT_IF_NOT(stack_pop(values, &a) && stack_push(stack_values, &a), ERROR);
             continue;
         }
 
+        if (c == '(') {
+            return SYNTAX_ERROR;
+        }
+
         function = get_func_operator(c);
-        EXIT_IF_NOT(function);
+        EXIT_IF_NOT(function, ERROR);
 
         if (function->bi_handler) {
-            EXIT_IF_NOT(stack_pop(stack_values, &b) && stack_pop(stack_values, &a));
+            EXIT_IF_NOT(stack_pop(stack_values, &b) && stack_pop(stack_values, &a), SYNTAX_ERROR);
             result = function->bi_handler(a, b);
+
+            if (!result) {
+                if (function->bi_handler == mpt_div && mpt_is_zero(b)) {
+                    mpt_free(&a);
+                    mpt_free(&b);
+                    return DIV_BY_ZERO;
+                }
+            }
+
             mpt_free(&a);
             mpt_free(&b);
-
-            EXIT_IF_NOT(result && stack_push(stack_values, &result));
+            EXIT_IF_NOT(result, MATH_ERROR);
+            EXIT_IF_NOT(stack_push(stack_values, &result), ERROR);
         }
         else if (function->un_handler) {
-            EXIT_IF_NOT(stack_pop(stack_values, &a));
+            EXIT_IF_NOT(stack_pop(stack_values, &a), SYNTAX_ERROR);
             
             result = function->un_handler(a);
-            mpt_free(&a);
 
-            EXIT_IF_NOT(result && stack_push(stack_values, &result));
+            if (!result) {
+                if (function->un_handler == mpt_factorial && mpt_is_negative(a)) {
+                    mpt_free(&a);
+                    return FACTORIAL_OF_NEGATIVE;
+                }
+            }
+
+            mpt_free(&a);
+            EXIT_IF_NOT(result, MATH_ERROR);
+            EXIT_IF_NOT(stack_push(stack_values, &result), ERROR);
         }
         else {
-            return NULL;
+            return ERROR;
         }
     }
 
     if (stack_item_count(stack_values) != 1) {
-        return NULL;
+        return SYNTAX_ERROR;
     }
 
-    stack_pop(stack_values, &result);
+    stack_pop(stack_values, dest);
     stack_free(&stack_values);
-    return result;
+    return RESULT_OK;
 
     #undef EXIT_IF_NOT
 }
