@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "mpt/mpt.h"
-#include "stack/stack.h"
+#include "data_structures/vector.h"
 #include "operators.h"
 #include "shunting_yard.h"
 
@@ -181,19 +181,14 @@ int main(int argc, char *argv[]) {
             goto clean_and_exit; \
         }
 
-    input_vector = vector_allocate(sizeof(char), NULL);
-    FAIL_IF_NOT(input_vector);
-    
-    stream = init_stream(argc, argv);
-    FAIL_IF_NOT(stream);
+    FAIL_IF_NOT(input_vector = vector_allocate(sizeof(char), NULL));
+    FAIL_IF_NOT(stream = init_stream(argc, argv));
 
     for (;;) {
         printf("> ");
 
         FAIL_IF_NOT(load_line(stream, input_vector));
-
-        input = (char *)vector_at(input_vector, 0);
-        FAIL_IF_NOT(input);
+        FAIL_IF_NOT(input = (char *)vector_at(input_vector, 0));
 
         if (vector_isempty(input_vector)) {
             break;

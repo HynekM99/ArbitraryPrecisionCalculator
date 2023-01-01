@@ -13,8 +13,8 @@
 #define DIV_BY_ZERO 4
 #define FACTORIAL_OF_NEGATIVE 5
 
-#include "stack/stack.h"
-#include "vector.h"
+#include "data_structures/stack.h"
+#include "data_structures/vector.h"
 #include "operators.h"
 #include "mpt/mpt.h"
 

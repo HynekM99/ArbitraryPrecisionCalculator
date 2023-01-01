@@ -6,8 +6,8 @@ set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -ansi")
 add_executable(main 
     src/main.c 
     
-    src/vector.c
-    src/stack/stack.c
+    src/data_structures/stack.c
+    src/data_structures/vector.c
     src/operators.c
     src/shunting_yard.c
     src/mpt/multiple_precision_type.c
@@ -19,8 +19,8 @@ add_executable(main
 add_executable(tests
     src/tests.c 
     
-    src/vector.c
-    src/stack/stack.c
+    src/data_structures/stack.c
+    src/data_structures/vector.c
     src/operators.c
     src/shunting_yard.c
     src/mpt/multiple_precision_type.c
