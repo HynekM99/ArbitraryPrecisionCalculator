@@ -6,9 +6,37 @@
 #include "operators.h"
 #include "shunting_yard.h"
 
-#define MAX_INPUT_LENGTH 255
-
 #define QUIT_CODE -1
+
+int load_stream(FILE *stream, vector_type *dest) {
+    int c_int;
+    char c = 0;
+    if (!stream || !dest || !vector_isempty(dest)) {
+        return 0;
+    }
+
+    while ((c_int = getc(stream)) != EOF) {
+        c = (char)c_int;
+        if (c == '\n' || c == '\r') {
+            c = 0;
+        }
+        if (!vector_push_back(dest, &c)) {
+            return 0;
+        }
+        if (c == 0) {
+            break;
+        }
+    }
+
+    if (c != 0) {
+        c = 0;
+        if (!vector_push_back(dest, &c)) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
 
 int evaluate_command(const char *input, enum bases *out) {
     vector_type *rpn_str = NULL;
@@ -91,8 +119,10 @@ int evaluate_command(const char *input, enum bases *out) {
 }
 
 int main(int argc, char *argv[]) {
+    int exit = EXIT_SUCCESS;
+    char *input = NULL;
     enum bases out = dec;
-    char input[MAX_INPUT_LENGTH];
+    vector_type *input_vector = NULL;
     FILE *stream;
 
     if (argc < 2) {
@@ -102,29 +132,60 @@ int main(int argc, char *argv[]) {
         stream = fopen(argv[1], "r");
         if (!stream) {
             printf("Invalid input file!");
-            return EXIT_FAILURE;
+            exit = EXIT_FAILURE;
+            goto clean_and_exit;
         }
     }
     else {
         printf("Usage: %s <file.txt>", __FILE__);
-        return EXIT_FAILURE;
+        exit = EXIT_FAILURE;
+        goto clean_and_exit;
+    }
+
+    input_vector = vector_allocate(sizeof(char), NULL);
+    if (!input_vector) {
+        exit = EXIT_FAILURE;
+        goto clean_and_exit;
     }
 
     for (;;) {
         printf("> ");
-        if (!fgets(input, MAX_INPUT_LENGTH, stream)) {
+
+        if (!load_stream(stream, input_vector)) {
+            exit = EXIT_FAILURE;
+            goto clean_and_exit;
+        }
+
+        input = (char *)vector_at(input_vector, 0);
+        if (!input) {
+            exit = EXIT_FAILURE;
+            goto clean_and_exit;
+        }
+
+        if (vector_count(input_vector) == 0) {
             break;
         }
 
-        input[strcspn(input, "\r\n")] = '\000';
-        if (argc == 2) {
+        if (stream != stdin) {
             printf("%s\n", input);
         }
         if (evaluate_command(input, &out) == QUIT_CODE) {
             break;
         }
+
+        if (!vector_clear(input_vector)) {
+            exit = EXIT_FAILURE;
+            goto clean_and_exit;
+        }
+
+        if (feof(stream)) {
+            break;
+        }
     }
 
+  clean_and_exit:
+    vector_deallocate(&input_vector);
     fclose(stream);
-    return EXIT_SUCCESS;
+
+    return exit;
 }

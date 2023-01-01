@@ -2,7 +2,7 @@
 #include "operators.h"
 
 /**
- * @brief Pole dostupných dvou-operandových operací a konstanta, která udržuje jejich počet.
+ * @brief Pole dostupných operací a konstanta, která udržuje jejich počet.
  */
 const func_oper_type OPERATORS[] = {
     { '+', mpt_add, NULL, 1, left },

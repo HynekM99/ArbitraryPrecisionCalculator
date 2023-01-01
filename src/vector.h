@@ -64,6 +64,8 @@ int vector_init(vector_type *v, const size_t item_size, const vec_it_dealloc_typ
  */
 void vector_deinit(vector_type *v);
 
+int vector_clear(vector_type *v);
+
 /**
  * @brief Uvolní data držená vektorem `*v` z operační paměti počítače pomocí funkce `vector_deinit` a následně uvolní i dynamicky alokovanou instanci sturktury `vector_type`
  *        a zneplatní ukazatel na ní.

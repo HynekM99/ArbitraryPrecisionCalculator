@@ -73,6 +73,14 @@ void vector_deinit(vector_type *v) {
     }
 }
 
+int vector_clear(vector_type *v) {
+    if (!v) {
+        return 0;
+    }
+    vector_deinit(v);
+    return vector_init(v, v->item_size, v->deallocator);
+}
+
 void vector_deallocate(vector_type **v) {
     if (!v || !*v) {
         return;
