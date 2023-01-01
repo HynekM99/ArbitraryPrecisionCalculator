@@ -298,6 +298,7 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
 }
 
 int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
+    int res = RESULT_OK;
     char c;
     size_t i;
     mpt *a, *b, *result;
@@ -310,7 +311,8 @@ int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
 
     #define EXIT_IF_NOT(v, e) \
         if (!(v)) { \
-            return e; \
+            res = e; \
+            goto clean_and_exit; \
         }
 
     stack_values = stack_create(stack_item_count(values), values->item_size);
@@ -336,10 +338,13 @@ int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
             result = function->bi_handler(a, b);
 
             if (!result) {
-                if (function->bi_handler == mpt_div && mpt_is_zero(b)) {
+                if ((function->bi_handler == mpt_div  || 
+                    function->bi_handler == mpt_mod) && 
+                    mpt_is_zero(b)) {
                     mpt_free(&a);
                     mpt_free(&b);
-                    return DIV_BY_ZERO;
+                    res = DIV_BY_ZERO;
+                    goto clean_and_exit;
                 }
             }
 
@@ -356,7 +361,8 @@ int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
             if (!result) {
                 if (function->un_handler == mpt_factorial && mpt_is_negative(a)) {
                     mpt_free(&a);
-                    return FACTORIAL_OF_NEGATIVE;
+                    res = FACTORIAL_OF_NEGATIVE;
+                    goto clean_and_exit;
                 }
             }
 
@@ -365,17 +371,29 @@ int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
             EXIT_IF_NOT(stack_push(stack_values, &result), ERROR);
         }
         else {
-            return ERROR;
+            res = ERROR;
+            goto clean_and_exit;
         }
     }
 
     if (stack_item_count(stack_values) != 1) {
-        return SYNTAX_ERROR;
+        res = SYNTAX_ERROR;
+        goto clean_and_exit;
     }
 
-    stack_pop(stack_values, dest);
+    if (!stack_pop(stack_values, dest)) {
+        res = ERROR;
+    }
     stack_free(&stack_values);
-    return RESULT_OK;
+    return res;
+
+  clean_and_exit:
+    while (!stack_isempty(stack_values)) {
+        stack_pop(stack_values, &a);
+        mpt_free(&a);
+    }
+    stack_free(&stack_values);
+    return res;
 
     #undef EXIT_IF_NOT
 }
