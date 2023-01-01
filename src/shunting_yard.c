@@ -199,6 +199,10 @@ static int shunt_next_char_(const char **str, char *last_operator, vector_type *
         }
     }
     else if (**str >= '0' && **str <= '9') {
+        if (*last_operator == RPN_VALUE_SYMBOL ||
+            *last_operator == '!') {
+            return SYNTAX_ERROR;
+        }
         if (!shunt_value_(str, last_operator, rpn_str, vector_values)) {
             return ERROR;
         }
@@ -207,10 +211,14 @@ static int shunt_next_char_(const char **str, char *last_operator, vector_type *
         return INVALID_SYMBOL;
     }
     else if (get_func_operator(**str) || **str == '(' || **str == ')') {
-        if (**str == '!') {
-            if (*last_operator == 0 || *(*str - 1) == ' ') {
+        if (**str == '(') {
+            if (*last_operator == RPN_VALUE_SYMBOL ||
+                *last_operator == '!') {
                 return SYNTAX_ERROR;
             }
+        }
+        if (**str == '!' && (*last_operator == 0 || *(*str - 1) == ' ')) {
+            return SYNTAX_ERROR;
         }
 
         if (!push_operator_(**str, rpn_str, operator_stack)) {

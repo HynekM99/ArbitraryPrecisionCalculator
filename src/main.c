@@ -49,6 +49,20 @@ void print_out(const enum bases out) {
     }
 }
 
+int str_empty(const char *str) {
+    if (!str) {
+        return 1;
+    }
+
+    for (; *str != 0 && *str != '\n'; ++str) {
+        if (*str != ' ') {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 int evaluate_expression(const char *input, enum bases *out) {
     vector_type *rpn_str = NULL;
     stack *values = NULL;
@@ -104,6 +118,9 @@ int evaluate_expression(const char *input, enum bases *out) {
 }
 
 int evaluate_command(const char *input, enum bases *out) {
+    if (str_empty(input)) {
+        return EVALUATION_SUCCESS;
+    }
     if (strcmp(input, "quit") == 0) {
         return QUIT_CODE;
     }
@@ -177,6 +194,10 @@ int main(int argc, char *argv[]) {
 
         input = (char *)vector_at(input_vector, 0);
         FAIL_IF_NOT(input);
+
+        if (vector_isempty(input_vector)) {
+            break;
+        }
 
         if (stream != stdin) {
             printf("%s\n", input);
