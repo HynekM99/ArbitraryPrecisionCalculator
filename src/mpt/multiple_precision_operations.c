@@ -316,12 +316,12 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
         }
     }
 
+  clean_and_exit:
     if (is_res_negative) {
         res_negative = mpt_negate(res);
         replace_mpt(&res, &res_negative);
     }
-
-  clean_and_exit:
+    
     mpt_free(&one);
     mpt_free(&part);
     mpt_free(&part_shifted);
