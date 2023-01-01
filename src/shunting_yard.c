@@ -138,9 +138,12 @@ static int shunt_next_char_(const char **str, char *last_operator, vector_type *
     }
 
     if (**str == '-') {
-        if (*last_operator == 0 ||
-            *last_operator == '-' || *last_operator == '(' || 
-            *last_operator == '*' || *last_operator == '+') {
+        if (*last_operator == 0) {
+            minus = RPN_UNARY_MINUS_SYMBOL;
+        }
+        if (*last_operator != ')' && 
+            *last_operator != '!' && 
+            *last_operator != RPN_VALUE_SYMBOL) {
             minus = RPN_UNARY_MINUS_SYMBOL;
         }
         else if (*last_operator == '^') {
