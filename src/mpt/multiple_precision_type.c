@@ -243,6 +243,8 @@ mpt *mpt_optimize(const mpt *orig) {
         *segment = segments_to_remove;
     }
 
+    EXIT_IF_NOT(vector_realloc(new->list, vector_count(new->list)));
+
     return new;
 
     #undef EXIT_IF_NOT
