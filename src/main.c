@@ -7,8 +7,10 @@
 #include "shunting_yard.h"
 
 #define QUIT_CODE -1
+#define EVALUATION_FAILURE 0
+#define EVALUATION_SUCCESS 1
 
-int load_stream(FILE *stream, vector_type *dest) {
+int load_line(FILE *stream, vector_type *dest) {
     int c_int;
     char c = 0;
     if (!stream || !dest || !vector_isempty(dest)) {
@@ -38,51 +40,31 @@ int load_stream(FILE *stream, vector_type *dest) {
     return 1;
 }
 
-int evaluate_command(const char *input, enum bases *out) {
+void print_out(const enum bases out) {
+    switch (out) {
+        case bin: printf("bin\n"); break;
+        case dec: printf("dec\n"); break;
+        case hex: printf("hex\n"); break;
+        default:  break;
+    }
+}
+
+int evaluate_expression(const char *input, enum bases *out) {
     vector_type *rpn_str = NULL;
     stack *values = NULL;
     mpt *result = NULL;
-    int res;
+    int res = shunt(input, &rpn_str, &values);
 
-    if (strcmp(input, "quit") == 0) {
-        return QUIT_CODE;
-    }
-    if (strcmp(input, "bin") == 0) {
-        printf("bin\n");
-        *out = bin;
-        return 1;
-    }
-    if (strcmp(input, "dec") == 0) {
-        printf("dec\n");
-        *out = dec;
-        return 1;
-    }
-    if (strcmp(input, "hex") == 0) {
-        printf("hex\n");
-        *out = hex;
-        return 1;
-    }
-    if (strcmp(input, "out") == 0) {
-        switch (*out) {
-            case bin: printf("bin\n"); break;
-            case dec: printf("dec\n"); break;
-            case hex: printf("hex\n"); break;
-            default:  break;
-        }
-        return 1;
-    }
-
-    res = shunt(input, &rpn_str, &values);
     switch (res) {
         case INVALID_SYMBOL: 
             printf("Invalid command \"%s\"!\n", input);
-            return 1;
+            return EVALUATION_FAILURE;
         case SYNTAX_ERROR:
             printf("Syntax error!\n");
-            return 1;
+            return EVALUATION_FAILURE;
         case ERROR:
             printf("Error while shunting!\n");
-            return 1;
+            return EVALUATION_FAILURE;
         default: break;
     }
     
@@ -90,32 +72,83 @@ int evaluate_command(const char *input, enum bases *out) {
     switch (res) {
         case SYNTAX_ERROR:
             printf("Syntax error!\n");
-            return 1;
+            return EVALUATION_FAILURE;
         case MATH_ERROR:
             printf("Math error!\n");
-            return 1;
+            return EVALUATION_FAILURE;
         case DIV_BY_ZERO:
             printf("Division by zero!\n");
-            return 1;
+            return EVALUATION_FAILURE;
         case FACTORIAL_OF_NEGATIVE:
             printf("Input of factorial must not be negative!\n");
-            return 1;
+            return EVALUATION_FAILURE;
         case ERROR:
             printf("Error while evaluating!\n");
-            return 1;
+            return EVALUATION_FAILURE;
         default: break;
     }
+
     if (!result) {
         printf("Error!\n");
-        return 1;
+        return EVALUATION_FAILURE;
     }
 
     mpt_print(result, *out);
+    printf("\n");
+
     vector_deallocate(&rpn_str);
     stack_free(&values);
     mpt_free(&result);
-    printf("\n");
-    return 1;
+
+    return EVALUATION_SUCCESS;
+}
+
+int evaluate_command(const char *input, enum bases *out) {
+    if (strcmp(input, "quit") == 0) {
+        return QUIT_CODE;
+    }
+    if (strcmp(input, "bin") == 0) {
+        *out = bin;
+        print_out(*out);
+        return EVALUATION_SUCCESS;
+    }
+    if (strcmp(input, "dec") == 0) {
+        *out = dec;
+        print_out(*out);
+        return EVALUATION_SUCCESS;
+    }
+    if (strcmp(input, "hex") == 0) {
+        *out = hex;
+        print_out(*out);
+        return EVALUATION_SUCCESS;
+    }
+    if (strcmp(input, "out") == 0) {
+        print_out(*out);
+        return EVALUATION_SUCCESS;
+    }
+
+    return evaluate_expression(input, out);
+}
+
+FILE *init_stream(const int argc, char *argv[]) {
+    FILE *stream = NULL;
+
+    if (argc < 2) {
+        return stdin;
+    }
+
+    if (argc > 2) {
+        printf("Usage: %s <file.txt>", __FILE__);
+        return NULL;
+    }
+
+    stream = fopen(argv[1], "r");
+    if (!stream) {
+        printf("Invalid input file!");
+        return NULL;
+    }
+
+    return stream;
 }
 
 int main(int argc, char *argv[]) {
@@ -123,48 +156,27 @@ int main(int argc, char *argv[]) {
     char *input = NULL;
     enum bases out = dec;
     vector_type *input_vector = NULL;
-    FILE *stream;
+    FILE *stream = NULL;
 
-    if (argc < 2) {
-        stream = stdin;
-    }
-    else if (argc == 2) {
-        stream = fopen(argv[1], "r");
-        if (!stream) {
-            printf("Invalid input file!");
-            exit = EXIT_FAILURE;
-            goto clean_and_exit;
+    #define FAIL_IF_NOT(v) \
+        if (!(v)) { \
+            exit = EXIT_FAILURE; \
+            goto clean_and_exit; \
         }
-    }
-    else {
-        printf("Usage: %s <file.txt>", __FILE__);
-        exit = EXIT_FAILURE;
-        goto clean_and_exit;
-    }
 
     input_vector = vector_allocate(sizeof(char), NULL);
-    if (!input_vector) {
-        exit = EXIT_FAILURE;
-        goto clean_and_exit;
-    }
+    FAIL_IF_NOT(input_vector);
+    
+    stream = init_stream(argc, argv);
+    FAIL_IF_NOT(stream);
 
     for (;;) {
         printf("> ");
 
-        if (!load_stream(stream, input_vector)) {
-            exit = EXIT_FAILURE;
-            goto clean_and_exit;
-        }
+        FAIL_IF_NOT(load_line(stream, input_vector));
 
         input = (char *)vector_at(input_vector, 0);
-        if (!input) {
-            exit = EXIT_FAILURE;
-            goto clean_and_exit;
-        }
-
-        if (vector_count(input_vector) == 0) {
-            break;
-        }
+        FAIL_IF_NOT(input);
 
         if (stream != stdin) {
             printf("%s\n", input);
@@ -173,10 +185,7 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        if (!vector_clear(input_vector)) {
-            exit = EXIT_FAILURE;
-            goto clean_and_exit;
-        }
+        FAIL_IF_NOT(vector_clear(input_vector));
 
         if (feof(stream)) {
             break;
@@ -188,4 +197,6 @@ int main(int argc, char *argv[]) {
     fclose(stream);
 
     return exit;
+
+    #undef FAIL_IF_NOT
 }
