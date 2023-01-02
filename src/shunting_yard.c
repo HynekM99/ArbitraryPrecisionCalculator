@@ -4,7 +4,7 @@
 #include "shunting_yard.h"
 #include "data_structures/convert.h"
 
-static int shunt_next_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values);
+static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values);
 
 static void mpt_free_wrapper_(void *poor) {
     mpt_free(poor);
@@ -99,14 +99,18 @@ static int infix_syntax_ok_(const char c, const char last_operator, const int sp
     c_func = get_func_operator(c);
     last_func = get_func_operator(last_operator);
 
-    if (c == '(' || c == RPN_VALUE_SYMBOL || (c_func && c_func->un_handler && c_func->assoc == right)) {
+    if ((c == '(') || 
+        (c == RPN_VALUE_SYMBOL) || 
+        (c_func && c_func->un_handler && c_func->assoc == right)) {
         if (!last_func) {
             return last_operator == 0 || last_operator == '(';
         }
         return (last_func->un_handler && last_func->assoc == right) || last_func->bi_handler;
     }
 
-    if (c == ')' || (c_func->un_handler && c_func->assoc == left)) {
+    if ((c == ')') || 
+        (c_func && c_func->bi_handler) ||
+        (c_func && c_func->un_handler && c_func->assoc == left)) {
         if (!last_func) {
             return last_operator == RPN_VALUE_SYMBOL || last_operator == ')';
         }
@@ -178,7 +182,7 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
         }
 
         for (; !is_end_char(**str) && *str <= closing_bracket; ++*str) {
-            res = shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values);
+            res = shunt_char_(str, last_operator, rpn_str, operator_stack, vector_values);
             if (res != SYNTAX_OK) {
                 return res;
             }
@@ -186,7 +190,7 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
     }
 
     for (; !is_end_char(**str) && **str == '!'; ++*str) {
-        res = shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values);
+        res = shunt_char_(str, last_operator, rpn_str, operator_stack, vector_values);
         if (res != SYNTAX_OK) {
             return res;
         }
@@ -199,7 +203,7 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
     return SYNTAX_OK;
 }
 
-static int shunt_next_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
+static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
     if (**str == ' ') {
         return SYNTAX_OK;
     }
@@ -235,6 +239,20 @@ static int shunt_next_char_(const char **str, char *last_operator, vector_type *
     return SYNTAX_OK;
 }
 
+static int get_math_error_un_func_(const char operator, const mpt *a) {
+    if (operator == '!' && mpt_is_negative(a)) {
+        return FACTORIAL_OF_NEGATIVE;
+    }
+    return MATH_ERROR;
+}
+
+static int get_math_error_bi_func_(const char operator, const mpt *a, const mpt *b) {
+    if ((operator == '/' || operator == '%') && mpt_is_zero(b)) {
+        return DIV_BY_ZERO;
+    }
+    return MATH_ERROR;
+}
+
 int shunt(const char *str, vector_type **rpn_str, stack **values) {
     int res;
     char c, last_operator = 0;
@@ -254,7 +272,7 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
     }
 
     for (; !is_end_char(*str); ++str) {
-        res = shunt_next_char_(&str, &last_operator, *rpn_str, operator_stack, vector_values);
+        res = shunt_char_(&str, &last_operator, *rpn_str, operator_stack, vector_values);
         if (res != SYNTAX_OK) {
             goto clean_and_exit;
         }
@@ -290,14 +308,60 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
     return res;
 }
 
+static int evaluate_rpn_char_(const char c, stack *orig_values, stack *stack_values) {
+    int res = RESULT_OK;
+    const func_oper_type *function = NULL;
+    mpt *a, *b, *result;
+    a = b = result = NULL;
+
+    #define EXIT_IF(v, e) \
+        if (v) { \
+            res = e; \
+            goto clean_and_exit; \
+        }
+
+    EXIT_IF(c == '(', SYNTAX_ERROR);
+
+    if (c == RPN_VALUE_SYMBOL) {
+        EXIT_IF(!stack_pop(orig_values, &a) || !stack_push(stack_values, &a), ERROR);
+        return RESULT_OK;
+    }
+
+    function = get_func_operator(c);
+    EXIT_IF(!function, ERROR);
+
+    if (function->bi_handler) {
+        EXIT_IF(!stack_pop(stack_values, &b) || !stack_pop(stack_values, &a), SYNTAX_ERROR);
+        result = function->bi_handler(a, b);
+        EXIT_IF(!result, get_math_error_bi_func_(c, a, b));
+    }
+    else if (function->un_handler) {
+        EXIT_IF(!stack_pop(stack_values, &a), SYNTAX_ERROR);
+        result = function->un_handler(a);
+        EXIT_IF(!result, get_math_error_un_func_(c, a));
+    }
+    else {
+        return ERROR;
+    }
+
+  clean_and_exit:
+    mpt_free(&a);
+    mpt_free(&b);
+
+    if (result && !stack_push(stack_values, &result)) {
+        return ERROR;
+    }
+    return res;
+
+    #undef EXIT_IF
+}
+
 int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
     int res = RESULT_OK;
-    char c;
+    char *c;
     size_t i;
-    mpt *a, *b, *result;
     stack *stack_values = NULL;
-    const func_oper_type *function = NULL;
-    a = b = result = NULL;
+    mpt *a = NULL;
     if (!dest || !rpn_str || !values) {
         return ERROR;
     }
@@ -312,76 +376,17 @@ int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
     EXIT_IF_NOT(stack_values, ERROR);
 
     for (i = 0; i < vector_count(rpn_str); ++i) {
-        c = *(char *)vector_at(rpn_str, i);
+        c = (char *)vector_at(rpn_str, i);
+        EXIT_IF_NOT(c, ERROR);
 
-        if (c == RPN_VALUE_SYMBOL) {
-            EXIT_IF_NOT(stack_pop(values, &a) && stack_push(stack_values, &a), ERROR);
-            a = NULL;
-            continue;
-        }
-
-        if (c == '(') {
-            return SYNTAX_ERROR;
-        }
-
-        function = get_func_operator(c);
-        EXIT_IF_NOT(function, ERROR);
-
-        if (function->bi_handler) {
-            EXIT_IF_NOT(stack_pop(stack_values, &b) && stack_pop(stack_values, &a), SYNTAX_ERROR);
-            result = function->bi_handler(a, b);
-
-            if (!result) {
-                if ((function->bi_handler == mpt_div  || 
-                    function->bi_handler == mpt_mod) && 
-                    mpt_is_zero(b)) {
-                    res = DIV_BY_ZERO;
-                    goto clean_and_exit;
-                }
-            }
-
-            mpt_free(&a);
-            mpt_free(&b);
-            EXIT_IF_NOT(result, MATH_ERROR);
-            EXIT_IF_NOT(stack_push(stack_values, &result), ERROR);
-        }
-        else if (function->un_handler) {
-            EXIT_IF_NOT(stack_pop(stack_values, &a), SYNTAX_ERROR);
-            
-            result = function->un_handler(a);
-
-            if (!result) {
-                if (function->un_handler == mpt_factorial && mpt_is_negative(a)) {
-                    res = FACTORIAL_OF_NEGATIVE;
-                    goto clean_and_exit;
-                }
-            }
-
-            mpt_free(&a);
-            EXIT_IF_NOT(result, MATH_ERROR);
-            EXIT_IF_NOT(stack_push(stack_values, &result), ERROR);
-        }
-        else {
-            res = ERROR;
-            goto clean_and_exit;
-        }
+        res = evaluate_rpn_char_(*c, values, stack_values);
+        EXIT_IF_NOT(res == RESULT_OK, res);
     }
 
-    if (stack_item_count(stack_values) != 1) {
-        res = SYNTAX_ERROR;
-        goto clean_and_exit;
-    }
-
-    if (!stack_pop(stack_values, dest)) {
-        res = ERROR;
-    }
-    stack_free(&stack_values);
-    return res;
-
+    EXIT_IF_NOT(stack_item_count(stack_values) == 1, SYNTAX_ERROR);
+    EXIT_IF_NOT(stack_pop(stack_values, dest), ERROR);
+    
   clean_and_exit:
-    mpt_free(&a);
-    mpt_free(&b);
-
     while (!stack_isempty(stack_values)) {
         stack_pop(stack_values, &a);
         mpt_free(&a);
