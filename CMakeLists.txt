@@ -8,19 +8,7 @@ add_executable(main
     
     src/data_structures/stack.c
     src/data_structures/vector.c
-    src/operators.c
-    src/shunting_yard.c
-    src/mpt/multiple_precision_type.c
-    src/mpt/multiple_precision_parsing.c
-    src/mpt/multiple_precision_printing.c
-    src/mpt/multiple_precision_operations.c
-)
-
-add_executable(tests
-    src/tests.c 
-    
-    src/data_structures/stack.c
-    src/data_structures/vector.c
+    src/data_structures/convert.c
     src/operators.c
     src/shunting_yard.c
     src/mpt/multiple_precision_type.c

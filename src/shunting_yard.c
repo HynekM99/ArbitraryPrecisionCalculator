@@ -2,43 +2,26 @@
 #include <stdio.h>
 #include <string.h>
 #include "shunting_yard.h"
+#include "data_structures/convert.h"
+
+static int shunt_next_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values);
 
 static void mpt_free_wrapper_(void *poor) {
     mpt_free(poor);
 }
 
-static stack *vector_to_stack_(vector_type **v) {
-    size_t i = 0;
-    stack *s = NULL;
-    if (!v || !*v) {
-        return NULL;
-    }
-
-    s = stack_create(vector_count(*v), (*v)->item_size);
-    if (!s) {
-        return NULL;
-    }
-
-    for (i = 0; i < vector_count(*v); ++i) {
-        if (!stack_push(s, vector_at(*v, vector_count(*v) - i - 1))) {
-            stack_free(&s);
-            return NULL;
-        }
-    }
-
-    (*v)->deallocator = NULL;
-    vector_deallocate(v);
-    return s;
+static int is_end_char(const char c) {
+    return c == 0 || c == '\n';
 }
 
 static size_t get_operator_count_(const char *str) {
     size_t i = 0;
-    for (; *str != '\000' && *str != '\n'; ++str) {
+    for (; !is_end_char(*str); ++str) {
         if (get_func_operator(*str) || *str == '(') {
             ++i;
         }
     }
-    return i;
+    return i > 0 ? i : 1;
 }
 
 static int push_parsed_value_(const mpt *mpv, vector_type *rpn_str, vector_type *values) {
@@ -78,7 +61,6 @@ static int push_operator_(const char operator, vector_type *rpn_str, stack *oper
 
     while (!stack_isempty(operator_stack)) {
         EXIT_IF_NOT(stack_head(operator_stack, &c));
-
         if (c == '(') {
             return stack_push(operator_stack, &operator);
         }
@@ -112,9 +94,35 @@ static int shunt_value_(const char **str, char *last_operator, vector_type *rpn_
     return 1;
 }
 
+static int infix_syntax_ok_(const char c, const char last_operator, const int space) {
+    const func_oper_type *c_func, *last_func; 
+    c_func = get_func_operator(c);
+    last_func = get_func_operator(last_operator);
+
+    if (c == '(' || c == RPN_VALUE_SYMBOL || (c_func && c_func->un_handler && c_func->assoc == right)) {
+        if (!last_func) {
+            return last_operator == 0 || last_operator == '(';
+        }
+        return (last_func->un_handler && last_func->assoc == right) || last_func->bi_handler;
+    }
+
+    if (c == ')' || (c_func->un_handler && c_func->assoc == left)) {
+        if (!last_func) {
+            return last_operator == RPN_VALUE_SYMBOL || last_operator == ')';
+        }
+        return last_func->un_handler && last_func->assoc == left && !space;
+    }
+    
+    if (c_func && c_func->bi_handler) {
+        return last_operator == RPN_VALUE_SYMBOL || last_operator == ')';
+    }
+
+    return 0;
+}
+
 static char *find_closing_bracket_(const char *str) {
     size_t l_brackets = 1, r_brackets = 0;
-    for (; *str != '\000' && *str != '\n'; ++str) {
+    for (; !is_end_char(*str); ++str) {
         switch (*str) {
             case '(': ++l_brackets; break;
             case ')': ++r_brackets; break;
@@ -129,101 +137,91 @@ static char *find_closing_bracket_(const char *str) {
     return NULL;
 }
 
-static int shunt_next_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
-    char minus, *closing_bracket = NULL;
+static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
     int res;
+    char minus = 0, *closing_bracket = NULL;
 
-    if (**str == ' ') {
-        return SYNTAX_OK;
+    if (*last_operator == ')' || *last_operator == RPN_VALUE_SYMBOL) {
+        minus = '-';
+    }
+    else {
+        minus = RPN_UNARY_MINUS_SYMBOL;
     }
 
-    if (**str == '-') {
-        if (*last_operator == 0) {
-            minus = RPN_UNARY_MINUS_SYMBOL;
-        }
-        else if (*last_operator == '^') {
-            minus = RPN_UNARY_MINUS_SYMBOL;
+    if (!infix_syntax_ok_(minus, *last_operator, *last_operator == 0 || *(*str - 1) == ' ')) {
+        return SYNTAX_ERROR;
+    }
+    if (minus == RPN_UNARY_MINUS_SYMBOL && *(*str + 1) == ' ') {
+        return SYNTAX_ERROR;
+    }
 
-            ++*str;
-            if (**str == ' ') { /* 4^- 2 ... Syntax error */
-                return SYNTAX_ERROR;
-            }
-
-            if (**str == '(') {
-                closing_bracket = find_closing_bracket_(*str + 1);
-                if (!closing_bracket) {
-                    return SYNTAX_ERROR;
-                }
-
-                for (; **str != '\000' && **str != '\n' && *str <= closing_bracket; ++*str) {
-                    res = shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values);
-                    if (res != SYNTAX_OK) {
-                        return res;
-                    }
-                }
-            }
-            else {
-                if (!shunt_value_(str, last_operator, rpn_str, vector_values)) {
-                    return 0;
-                }
-                ++*str;
-            }
-
-            for (; **str != '\000' && **str != '\n' && **str == '!'; ++*str) {
-                res = shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values);
-                if (res != SYNTAX_OK) {
-                    return res;
-                }
-            }
-            --*str;
-
-            if (!vector_push_back(rpn_str, &minus)) {
-                return ERROR;
-            }
-            return SYNTAX_OK;
-        }
-        else if (*last_operator != ')' && 
-            *last_operator != '!' && 
-            *last_operator != RPN_VALUE_SYMBOL) {
-            minus = RPN_UNARY_MINUS_SYMBOL;
-        }
-        else {
-            minus = '-';
-        }
-        
-        if (minus == RPN_UNARY_MINUS_SYMBOL && *(*str + 1) == ' ') {
-            return SYNTAX_ERROR;
-        }
-
+    if (minus == '-' || *last_operator != '^') {
         *last_operator = minus;
-
         if (!push_operator_(minus, rpn_str, operator_stack)) {
             return ERROR;
         }
+        return SYNTAX_OK;
+    }
+
+    *last_operator = minus;
+    ++*str;
+
+    if (**str != '(') {
+        if (!shunt_value_(str, last_operator, rpn_str, vector_values)) {
+            return ERROR;
+        }
+        ++*str;
+    }
+    else {
+        if (!(closing_bracket = find_closing_bracket_(*str + 1))) {
+            return SYNTAX_ERROR;
+        }
+
+        for (; !is_end_char(**str) && *str <= closing_bracket; ++*str) {
+            res = shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values);
+            if (res != SYNTAX_OK) {
+                return res;
+            }
+        }
+    }
+
+    for (; !is_end_char(**str) && **str == '!'; ++*str) {
+        res = shunt_next_char_(str, last_operator, rpn_str, operator_stack, vector_values);
+        if (res != SYNTAX_OK) {
+            return res;
+        }
+    }
+    --*str;
+
+    if (!vector_push_back(rpn_str, &minus)) {
+        return ERROR;
+    }
+    return SYNTAX_OK;
+}
+
+static int shunt_next_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
+    if (**str == ' ') {
+        return SYNTAX_OK;
+    }
+    if (**str == RPN_UNARY_MINUS_SYMBOL) {
+        return INVALID_SYMBOL;
+    }
+    
+    if (**str == '-') {
+        return shunt_minus_(str, last_operator, rpn_str, operator_stack, vector_values);
     }
     else if (**str >= '0' && **str <= '9') {
-        if (*last_operator == RPN_VALUE_SYMBOL ||
-            *last_operator == '!') {
+        if (!infix_syntax_ok_(RPN_VALUE_SYMBOL, *last_operator, *last_operator == 0 || *(*str - 1) == ' ')) {
             return SYNTAX_ERROR;
         }
         if (!shunt_value_(str, last_operator, rpn_str, vector_values)) {
             return ERROR;
         }
     }
-    else if (**str == RPN_UNARY_MINUS_SYMBOL) { /* Speciální znak pro unární mínus není povolen */
-        return INVALID_SYMBOL;
-    }
     else if (get_func_operator(**str) || **str == '(' || **str == ')') {
-        if (**str == '(') {
-            if (*last_operator == RPN_VALUE_SYMBOL ||
-                *last_operator == '!') {
-                return SYNTAX_ERROR;
-            }
-        }
-        if (**str == '!' && (*last_operator == 0 || *(*str - 1) == ' ')) {
+        if (!infix_syntax_ok_(**str, *last_operator, *last_operator == 0 || *(*str - 1) == ' ')) {
             return SYNTAX_ERROR;
         }
-
         if (!push_operator_(**str, rpn_str, operator_stack)) {
             return ERROR;
         }
@@ -240,19 +238,13 @@ static int shunt_next_char_(const char **str, char *last_operator, vector_type *
 int shunt(const char *str, vector_type **rpn_str, stack **values) {
     int res;
     char c, last_operator = 0;
-    size_t operator_count = 0;
     stack *operator_stack = NULL;
     vector_type *vector_values = NULL;
-    if (!str || str[0] == '\000' || !rpn_str || !values) {
+    if (!str || is_end_char(*str) || !rpn_str || !values) {
         return ERROR;
     }
     
-    operator_count = get_operator_count_(str);
-    if (operator_count == 0) {
-        operator_count = 1;
-    }
-
-    operator_stack = stack_create(operator_count, sizeof(char));
+    operator_stack = stack_create(get_operator_count_(str), sizeof(char));
     vector_values = vector_allocate(sizeof(mpt *), mpt_free_wrapper_);
     *rpn_str = vector_allocate(sizeof(char), NULL);
 
@@ -261,7 +253,7 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
         goto clean_and_exit;
     }
 
-    for (; *str != '\000' && *str != '\n'; ++str) {
+    for (; !is_end_char(*str); ++str) {
         res = shunt_next_char_(&str, &last_operator, *rpn_str, operator_stack, vector_values);
         if (res != SYNTAX_OK) {
             goto clean_and_exit;
@@ -281,7 +273,7 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
         goto clean_and_exit;
     }
 
-    *values = vector_to_stack_(&vector_values);
+    *values = vector_to_stack(&vector_values);
     if (!*values) {
         res = ERROR;
         goto clean_and_exit;
@@ -343,8 +335,6 @@ int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
                 if ((function->bi_handler == mpt_div  || 
                     function->bi_handler == mpt_mod) && 
                     mpt_is_zero(b)) {
-                    mpt_free(&a);
-                    mpt_free(&b);
                     res = DIV_BY_ZERO;
                     goto clean_and_exit;
                 }
@@ -362,7 +352,6 @@ int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
 
             if (!result) {
                 if (function->un_handler == mpt_factorial && mpt_is_negative(a)) {
-                    mpt_free(&a);
                     res = FACTORIAL_OF_NEGATIVE;
                     goto clean_and_exit;
                 }
