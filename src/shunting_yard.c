@@ -141,11 +141,6 @@ static int shunt_next_char_(const char **str, char *last_operator, vector_type *
         if (*last_operator == 0) {
             minus = RPN_UNARY_MINUS_SYMBOL;
         }
-        if (*last_operator != ')' && 
-            *last_operator != '!' && 
-            *last_operator != RPN_VALUE_SYMBOL) {
-            minus = RPN_UNARY_MINUS_SYMBOL;
-        }
         else if (*last_operator == '^') {
             minus = RPN_UNARY_MINUS_SYMBOL;
 
@@ -186,6 +181,11 @@ static int shunt_next_char_(const char **str, char *last_operator, vector_type *
                 return ERROR;
             }
             return SYNTAX_OK;
+        }
+        else if (*last_operator != ')' && 
+            *last_operator != '!' && 
+            *last_operator != RPN_VALUE_SYMBOL) {
+            minus = RPN_UNARY_MINUS_SYMBOL;
         }
         else {
             minus = '-';
@@ -287,6 +287,7 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
         goto clean_and_exit;
     }
 
+    vector_deallocate(&vector_values);
     stack_free(&operator_stack);
     return res;
     
@@ -323,6 +324,7 @@ int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
 
         if (c == RPN_VALUE_SYMBOL) {
             EXIT_IF_NOT(stack_pop(values, &a) && stack_push(stack_values, &a), ERROR);
+            a = NULL;
             continue;
         }
 
@@ -388,11 +390,19 @@ int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
     return res;
 
   clean_and_exit:
+    mpt_free(&a);
+    mpt_free(&b);
+
     while (!stack_isempty(stack_values)) {
         stack_pop(stack_values, &a);
         mpt_free(&a);
     }
+    while (!stack_isempty(values)) {
+        stack_pop(values, &a);
+        mpt_free(&a);
+    }
     stack_free(&stack_values);
+    
     return res;
 
     #undef EXIT_IF_NOT

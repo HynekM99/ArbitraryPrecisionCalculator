@@ -64,6 +64,7 @@ int str_empty(const char *str) {
 }
 
 int evaluate_expression(const char *input, enum bases *out) {
+    int evaluation_res = EVALUATION_FAILURE;
     vector_type *rpn_str = NULL;
     stack *values = NULL;
     mpt *result = NULL;
@@ -72,13 +73,13 @@ int evaluate_expression(const char *input, enum bases *out) {
     switch (res) {
         case INVALID_SYMBOL: 
             printf("Invalid command \"%s\"!\n", input);
-            return EVALUATION_FAILURE;
+            goto clean_and_exit;
         case SYNTAX_ERROR:
             printf("Syntax error!\n");
-            return EVALUATION_FAILURE;
+            goto clean_and_exit;
         case ERROR:
             printf("Error while shunting!\n");
-            return EVALUATION_FAILURE;
+            goto clean_and_exit;
         default: break;
     }
     
@@ -86,35 +87,38 @@ int evaluate_expression(const char *input, enum bases *out) {
     switch (res) {
         case SYNTAX_ERROR:
             printf("Syntax error!\n");
-            return EVALUATION_FAILURE;
+            goto clean_and_exit;
         case MATH_ERROR:
             printf("Math error!\n");
-            return EVALUATION_FAILURE;
+            goto clean_and_exit;
         case DIV_BY_ZERO:
             printf("Division by zero!\n");
-            return EVALUATION_FAILURE;
+            goto clean_and_exit;
         case FACTORIAL_OF_NEGATIVE:
             printf("Input of factorial must not be negative!\n");
-            return EVALUATION_FAILURE;
+            goto clean_and_exit;
         case ERROR:
             printf("Error while evaluating!\n");
-            return EVALUATION_FAILURE;
+            goto clean_and_exit;
         default: break;
     }
 
     if (!result) {
         printf("Error!\n");
-        return EVALUATION_FAILURE;
+        goto clean_and_exit;
     }
+
+    evaluation_res = EVALUATION_SUCCESS;
 
     mpt_print(result, *out);
     printf("\n");
 
+  clean_and_exit:
     vector_deallocate(&rpn_str);
     stack_free(&values);
     mpt_free(&result);
 
-    return EVALUATION_SUCCESS;
+    return evaluation_res;
 }
 
 int evaluate_command(const char *input, enum bases *out) {
