@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "shunting_yard.h"
-#include "data_structures/convert.h"
+#include "data_structures/conversion.h"
 
 static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values);
 
