@@ -48,6 +48,7 @@ int mpt_signum(const mpt *mpv) {
     if (mpt_is_negative(mpv)) {
         return -1;
     }
+    
     return !mpt_is_zero(mpv);
 }
 
@@ -58,6 +59,7 @@ mpt *mpt_abs(const mpt *mpv) {
     if (mpt_is_negative(mpv)) {
         return mpt_negate(mpv);
     }
+
     return clone_mpt(mpv);
 }
 
@@ -92,6 +94,7 @@ mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
 
   clean_and_exit:
     mpt_free(&new_tmp);
+
     return new;
 
     #undef EXIT_IF
@@ -125,6 +128,7 @@ mpt *mpt_negate(const mpt *mpv) {
   clean_and_exit:
     mpt_free(&new_tmp);
     mpt_free(&one);
+
     return new;
 
     #undef EXIT_IF
@@ -172,9 +176,14 @@ mpt *mpt_add(const mpt *mpv_a, const mpt *mpv_b) {
 }
 
 mpt *mpt_sub(const mpt *mpv_a, const mpt *mpv_b) {
-    mpt *negated_b = mpt_negate(mpv_b);
-    mpt *new = mpt_add(mpv_a, negated_b);
+    mpt *new, *negated_b;
+    new = negated_b = NULL;
+
+    negated_b = mpt_negate(mpv_b);
+    new = mpt_add(mpv_a, negated_b);
+
     mpt_free(&negated_b);
+
     return new;
 }
 
@@ -309,11 +318,14 @@ mpt *mpt_div(const mpt *mpv_dividend, const mpt *mpv_divisor) {
 mpt *mpt_mod(const mpt *mpv_dividend, const mpt *mpv_divisor) {
     mpt *res, *div, *mul;
     res = div = mul = NULL;
+
     div = mpt_div(mpv_dividend, mpv_divisor);
     mul = mpt_mul(div, mpv_divisor);
     res = mpt_sub(mpv_dividend, mul);
+
     mpt_free(&div);
     mpt_free(&mul);
+
     return res;
 }
 
