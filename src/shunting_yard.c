@@ -139,6 +139,7 @@ static char *find_closing_bracket_(const char *str) {
 
 static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
     int res;
+    const func_oper_type *last_func; 
     char minus = 0, *closing_bracket = NULL;
 
     #define EXIT_IF(v, e) \
@@ -146,7 +147,11 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
             return e; \
         }
 
-    if (*last_operator == ')' || *last_operator == RPN_VALUE_SYMBOL) {
+    last_func = get_func_operator(*last_operator);
+
+    if ((*last_operator == ')') || 
+        (*last_operator == RPN_VALUE_SYMBOL) ||
+        (last_func && last_func->un_handler && last_func->assoc == left)) {
         minus = '-';
     }
     else {
