@@ -8,7 +8,7 @@ static void *stack_at_(const stack *s, const size_t at) {
     return (char *)s->items + at * s->item_size;
 } 
 
-stack *stack_create(const size_t size, const size_t item_size) {
+stack *stack_create(const size_t size, const size_t item_size, const stack_it_dealloc_type deallocator) {
     stack *new;
     
     if (size == 0 || item_size == 0) {
@@ -29,6 +29,7 @@ stack *stack_create(const size_t size, const size_t item_size) {
     new->size = size;
     new->item_size = item_size;
     new->sp = 0;
+    new->deallocator = deallocator;
 
     return new;
 }
@@ -55,7 +56,7 @@ int stack_pop(stack *s, void *item) {
 }
 
 int stack_head(const stack *s, void *item) {
-    if (stack_item_count(s) == 0 || !item) {
+    if (stack_isempty(s) || !item) {
         return 0;
     }
 
@@ -64,20 +65,29 @@ int stack_head(const stack *s, void *item) {
 }
 
 size_t stack_item_count(const stack *s) {
-    if (!s) {
-        return 0;
-    }
-    
-    return s->sp;
+    return s ? s->sp : 0;
 }
 
 int stack_isempty(const stack *s) {
     return stack_item_count(s) == 0;
 }
 
+void stack_clear(stack *s) {
+    void *item = NULL;
+    while (stack_pop(s, item)) {
+        if (s->deallocator) {
+            s->deallocator(item);
+        }
+    }
+}
+
 void stack_free(stack **s) {
     if (!s || !*s) {
         return;
+    }
+
+    if ((*s)->deallocator) {
+        stack_clear(*s);
     }
 
     free((*s)->items);

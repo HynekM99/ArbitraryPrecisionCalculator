@@ -12,6 +12,12 @@
 #include <stddef.h>
 
 /**
+ * @brief Definice ukazatele na obecnou funkci, která umí uvolnit prvek uložený v zásobníku.
+ *        Využívá se ve funkci stack_free.
+ */
+typedef void (*stack_it_dealloc_type)(void *item);
+
+/**
  * @brief Definice zásobníkové struktury s možností vložení libovolně velkého prvku.
  */
 typedef struct stack_ {
@@ -19,6 +25,7 @@ typedef struct stack_ {
     size_t item_size;
     size_t sp;
     void *items;
+    stack_it_dealloc_type deallocator;
 } stack;
 
 /**
@@ -27,7 +34,7 @@ typedef struct stack_ {
  * @param item_size Velikost jednoho prvku zásobníku.
  * @return stack* Ukazatel na nově dynamicky alokovaný zásobník nebo NULL při chybě.
  */
-stack *stack_create(const size_t size, const size_t item_size);
+stack *stack_create(const size_t size, const size_t item_size, const stack_it_dealloc_type deallocator);
 
 /**
  * @brief Funkce pro vložení nového prvku na vrchol zásobníku.
@@ -66,6 +73,8 @@ size_t stack_item_count(const stack *s);
  * @return int 1, pokud je zásobník prázdný, jinak 0.
  */
 int stack_isempty(const stack *s);
+
+void stack_clear(stack *s);
 
 /**
  * @brief Funkce pro uvolnění zásobníkové struktury z paměti.

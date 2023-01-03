@@ -2,7 +2,7 @@
 
 static char addition_carry_(const unsigned char a, const unsigned char b, unsigned char carry) {
     unsigned char c = a + b;
-    return (c < a ) || (c == 255 && carry == 1);
+    return (c < a) || (c == 255 && carry == 1);
 }
 
 int mpt_compare(const mpt *mpv_a, const mpt *mpv_b) {
