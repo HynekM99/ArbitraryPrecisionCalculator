@@ -68,50 +68,32 @@ int evaluate_expression(const char *input, enum bases *out) {
     vector_type *rpn_str = NULL;
     stack *values = NULL;
     mpt *result = NULL;
-    int res = shunt(input, &rpn_str, &values);
 
+    int res = shunt(input, &rpn_str, &values);
     switch (res) {
-        case INVALID_SYMBOL: 
-            printf("Invalid command \"%s\"!\n", input);
-            goto clean_and_exit;
-        case SYNTAX_ERROR:
-            printf("Syntax error!\n");
-            goto clean_and_exit;
-        case ERROR:
-            printf("Error while parsing!\n");
-            goto clean_and_exit;
+        case INVALID_SYMBOL: printf("Invalid command \"%s\"!\n", input); break;
+        case SYNTAX_ERROR:   printf("Syntax error!\n"); break;
+        case ERROR:          printf("Error while parsing!\n"); break;
         default: break;
     }
     
-    res = evaluate_rpn(&result, rpn_str, values);
-    switch (res) {
-        case SYNTAX_ERROR:
-            printf("Syntax error!\n");
-            goto clean_and_exit;
-        case MATH_ERROR:
-            printf("Math error!\n");
-            goto clean_and_exit;
-        case DIV_BY_ZERO:
-            printf("Division by zero!\n");
-            goto clean_and_exit;
-        case FACTORIAL_OF_NEGATIVE:
-            printf("Input of factorial must not be negative!\n");
-            goto clean_and_exit;
-        case ERROR:
-            printf("Error while evaluating!\n");
-            goto clean_and_exit;
-        default: break;
-    }
-
-    if (!result) {
-        printf("Error!\n");
+    if (res != SYNTAX_OK) {
         goto clean_and_exit;
     }
 
-    evaluation_res = EVALUATION_SUCCESS;
-
-    mpt_print(result, *out);
-    printf("\n");
+    res = evaluate_rpn(&result, rpn_str, values);
+    switch (res) {
+        case SYNTAX_ERROR:          printf("Syntax error!\n"); break;
+        case MATH_ERROR:            printf("Math error!\n"); break;
+        case DIV_BY_ZERO:           printf("Division by zero!\n"); break;
+        case FACTORIAL_OF_NEGATIVE: printf("Input of factorial must not be negative!\n"); break;
+        case ERROR:                 printf("Error while evaluating!\n"); break;
+        default: 
+            evaluation_res = EVALUATION_SUCCESS;
+            mpt_print(result, *out);
+            printf("\n");
+            break;
+    }
 
   clean_and_exit:
     vector_deallocate(&rpn_str);
@@ -122,33 +104,35 @@ int evaluate_expression(const char *input, enum bases *out) {
 }
 
 int evaluate_command(const char *input, enum bases *out) {
+    if (!out) {
+        return EVALUATION_FAILURE;
+    }
+
+    #define SET_OUT_IF(v, e) \
+        if (v) { \
+            *out = e; \
+            print_out(*out); \
+            return EVALUATION_SUCCESS; \
+        }
+
     if (str_empty(input)) {
         return EVALUATION_SUCCESS;
     }
     if (strcmp(input, "quit") == 0) {
         return QUIT_CODE;
     }
-    if (strcmp(input, "bin") == 0) {
-        *out = bin;
-        print_out(*out);
-        return EVALUATION_SUCCESS;
-    }
-    if (strcmp(input, "dec") == 0) {
-        *out = dec;
-        print_out(*out);
-        return EVALUATION_SUCCESS;
-    }
-    if (strcmp(input, "hex") == 0) {
-        *out = hex;
-        print_out(*out);
-        return EVALUATION_SUCCESS;
-    }
     if (strcmp(input, "out") == 0) {
         print_out(*out);
         return EVALUATION_SUCCESS;
     }
 
+    SET_OUT_IF(strcmp(input, "bin") == 0, bin);
+    SET_OUT_IF(strcmp(input, "dec") == 0, dec);
+    SET_OUT_IF(strcmp(input, "hex") == 0, hex);
+
     return evaluate_expression(input, out);
+
+    #undef SET_OUT_IF
 }
 
 FILE *init_stream(const int argc, char *argv[]) {
