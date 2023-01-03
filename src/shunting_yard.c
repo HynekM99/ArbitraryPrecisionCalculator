@@ -141,6 +141,11 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
     int res;
     char minus = 0, *closing_bracket = NULL;
 
+    #define EXIT_IF(v, e) \
+        if (v) { \
+            return e; \
+        }
+
     if (*last_operator == ')' || *last_operator == RPN_VALUE_SYMBOL) {
         minus = '-';
     }
@@ -148,18 +153,12 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
         minus = RPN_UNARY_MINUS_SYMBOL;
     }
 
-    if (!infix_syntax_ok_(minus, *last_operator)) {
-        return SYNTAX_ERROR;
-    }
-    if (minus == RPN_UNARY_MINUS_SYMBOL && *(*str + 1) == ' ') {
-        return SYNTAX_ERROR;
-    }
+    EXIT_IF(!infix_syntax_ok_(minus, *last_operator), SYNTAX_ERROR);
+    EXIT_IF(minus == RPN_UNARY_MINUS_SYMBOL && *(*str + 1) == ' ', SYNTAX_ERROR);
 
     if (minus == '-' || *last_operator != '^') {
         *last_operator = minus;
-        if (!push_operator_(minus, rpn_str, operator_stack)) {
-            return ERROR;
-        }
+        EXIT_IF(!push_operator_(minus, rpn_str, operator_stack), ERROR);
         return SYNTAX_OK;
     }
 
@@ -167,65 +166,48 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
     ++*str;
 
     if (**str != '(') {
-        if (!shunt_value_(str, last_operator, rpn_str, vector_values)) {
-            return ERROR;
-        }
+        EXIT_IF(!shunt_value_(str, last_operator, rpn_str, vector_values), ERROR);
         ++*str;
     }
     else {
-        if (!(closing_bracket = find_closing_bracket_(*str + 1))) {
-            return SYNTAX_ERROR;
-        }
+        EXIT_IF(!(closing_bracket = find_closing_bracket_(*str + 1)), SYNTAX_ERROR);
 
         for (; !is_end_char(**str) && *str <= closing_bracket; ++*str) {
-            res = shunt_char_(str, last_operator, rpn_str, operator_stack, vector_values);
-            if (res != SYNTAX_OK) {
-                return res;
-            }
+            EXIT_IF((res = shunt_char_(str, last_operator, rpn_str, operator_stack, vector_values)) != SYNTAX_OK, res);
         }
     }
 
     for (; !is_end_char(**str) && **str == '!'; ++*str) {
-        res = shunt_char_(str, last_operator, rpn_str, operator_stack, vector_values);
-        if (res != SYNTAX_OK) {
-            return res;
-        }
+        EXIT_IF((res = shunt_char_(str, last_operator, rpn_str, operator_stack, vector_values)) != SYNTAX_OK, res);
     }
     --*str;
 
-    if (!vector_push_back(rpn_str, &minus)) {
-        return ERROR;
-    }
+    EXIT_IF(!vector_push_back(rpn_str, &minus), ERROR);
+
     return SYNTAX_OK;
+
+    #undef EXIT_IF
 }
 
 static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
-    if (**str == ' ') {
-        return SYNTAX_OK;
-    }
-    if (**str == RPN_UNARY_MINUS_SYMBOL) {
-        return INVALID_SYMBOL;
-    }
+    #define EXIT_IF(v, e) \
+        if (v) { \
+            return e; \
+        }
+
+    EXIT_IF(**str == ' ', SYNTAX_OK);
+    EXIT_IF(**str == RPN_UNARY_MINUS_SYMBOL, INVALID_SYMBOL);
     
     if (**str == '-') {
         return shunt_minus_(str, last_operator, rpn_str, operator_stack, vector_values);
     }
     else if (**str >= '0' && **str <= '9') {
-        if (!infix_syntax_ok_(RPN_VALUE_SYMBOL, *last_operator)) {
-            return SYNTAX_ERROR;
-        }
-        if (!shunt_value_(str, last_operator, rpn_str, vector_values)) {
-            return ERROR;
-        }
+        EXIT_IF(!infix_syntax_ok_(RPN_VALUE_SYMBOL, *last_operator), SYNTAX_ERROR);
+        EXIT_IF(!shunt_value_(str, last_operator, rpn_str, vector_values), ERROR);
     }
     else if (get_func_operator(**str) || **str == '(' || **str == ')') {
-        if (!infix_syntax_ok_(**str, *last_operator)) {
-            return SYNTAX_ERROR;
-        }
-        if (!push_operator_(**str, rpn_str, operator_stack)) {
-            return ERROR;
-        }
-
+        EXIT_IF(!infix_syntax_ok_(**str, *last_operator), SYNTAX_ERROR);
+        EXIT_IF(!push_operator_(**str, rpn_str, operator_stack), ERROR);
         *last_operator = **str;
     }
     else {
@@ -233,6 +215,8 @@ static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_s
     }
 
     return SYNTAX_OK;
+
+    #undef EXIT_IF
 }
 
 static int get_math_error_un_func_(const char operator, const mpt *a) {
@@ -247,61 +231,6 @@ static int get_math_error_bi_func_(const char operator, const mpt *b) {
         return DIV_BY_ZERO;
     }
     return MATH_ERROR;
-}
-
-int shunt(const char *str, vector_type **rpn_str, stack **values) {
-    int res;
-    char c, last_operator = 0;
-    stack *operator_stack = NULL;
-    vector_type *vector_values = NULL;
-    if (!str || is_end_char(*str) || !rpn_str || !values) {
-        return ERROR;
-    }
-    
-    operator_stack = stack_create(get_operator_count_(str), sizeof(char), NULL);
-    vector_values = vector_allocate(sizeof(mpt *), mpt_free_wrapper_);
-    *rpn_str = vector_allocate(sizeof(char), NULL);
-
-    if (!operator_stack || !*rpn_str || !vector_values) {
-        res = ERROR;
-        goto clean_and_exit;
-    }
-
-    for (; !is_end_char(*str); ++str) {
-        res = shunt_char_(&str, &last_operator, *rpn_str, operator_stack, vector_values);
-        if (res != SYNTAX_OK) {
-            goto clean_and_exit;
-        }
-    }
-
-    while (stack_item_count(operator_stack) > 0) {
-        if (!stack_pop(operator_stack, &c) ||
-            !vector_push_back(*rpn_str, &c)) {
-            res = ERROR;
-            goto clean_and_exit;
-        }
-    }
-
-    if (vector_isempty(vector_values)) {
-        res = SYNTAX_ERROR;
-        goto clean_and_exit;
-    }
-
-    *values = vector_to_stack(&vector_values);
-    if (!*values) {
-        res = ERROR;
-        goto clean_and_exit;
-    }
-
-    vector_deallocate(&vector_values);
-    stack_free(&operator_stack);
-    return res;
-    
-  clean_and_exit:
-    stack_free(&operator_stack);
-    vector_deallocate(rpn_str);
-    vector_deallocate(&vector_values);
-    return res;
 }
 
 static int evaluate_rpn_char_(const char c, stack *orig_values, stack *stack_values) {
@@ -328,13 +257,11 @@ static int evaluate_rpn_char_(const char c, stack *orig_values, stack *stack_val
 
     if (function->bi_handler) {
         EXIT_IF(!stack_pop(stack_values, &b) || !stack_pop(stack_values, &a), SYNTAX_ERROR);
-        result = function->bi_handler(a, b);
-        EXIT_IF(!result, get_math_error_bi_func_(c, b));
+        EXIT_IF(!(result = function->bi_handler(a, b)), get_math_error_bi_func_(c, b));
     }
     else if (function->un_handler) {
         EXIT_IF(!stack_pop(stack_values, &a), SYNTAX_ERROR);
-        result = function->un_handler(a);
-        EXIT_IF(!result, get_math_error_un_func_(c, a));
+        EXIT_IF(!(result = function->un_handler(a)), get_math_error_un_func_(c, a));
     }
     else {
         return ERROR;
@@ -352,7 +279,52 @@ static int evaluate_rpn_char_(const char c, stack *orig_values, stack *stack_val
     #undef EXIT_IF
 }
 
-int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values) {
+int shunt(const char *str, vector_type **rpn_str, stack **values) {
+    int res = SYNTAX_OK;
+    char c, last_operator = 0;
+    stack *operator_stack = NULL;
+    vector_type *vector_values = NULL;
+
+    #define EXIT_IF(v, e) \
+        if (v) { \
+            res = e; \
+            goto clean_and_exit; \
+        }
+
+    EXIT_IF(!str || is_end_char(*str) || !rpn_str || !values, ERROR);
+
+    operator_stack = stack_create(get_operator_count_(str), sizeof(char), NULL);
+    vector_values = vector_allocate(sizeof(mpt *), mpt_free_wrapper_);
+    *rpn_str = vector_allocate(sizeof(char), NULL);
+
+    EXIT_IF(!operator_stack || !*rpn_str || !vector_values, ERROR);
+
+    for (; !is_end_char(*str); ++str) {
+        EXIT_IF((res = shunt_char_(&str, &last_operator, *rpn_str, operator_stack, vector_values)) != SYNTAX_OK, res);
+    }
+
+    while (stack_pop(operator_stack, &c)) {
+        EXIT_IF(!vector_push_back(*rpn_str, &c), ERROR);
+    }
+
+    EXIT_IF(vector_isempty(vector_values), SYNTAX_ERROR);
+    EXIT_IF(!(*values = vector_to_stack(&vector_values)), ERROR);
+
+  clean_and_exit:
+    vector_deallocate(&vector_values);
+    stack_free(&operator_stack);
+
+    if (res != SYNTAX_OK) {
+        vector_deallocate(rpn_str);
+        stack_free(values);
+    }
+
+    return res;
+
+    #undef EXIT_IF
+}
+
+int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack *values) {
     int res = RESULT_OK;
     char *c;
     size_t i;

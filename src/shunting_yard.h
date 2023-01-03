@@ -20,6 +20,6 @@
 
 int shunt(const char *str, vector_type **rpn_str, stack **values);
 
-int evaluate_rpn(mpt **dest, vector_type *rpn_str, stack *values);
+int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack *values);
 
 #endif
