@@ -197,6 +197,10 @@ int mpt_is_negative(const mpt *mpv) {
     return mpv ? mpt_get_msb(mpv) : 0;
 }
 
+int mpt_is_odd(const mpt *mpv) {
+    return mpv ? mpt_get_bit(mpv, 0) : 0;
+}
+
 mpt *mpt_optimize(const mpt *orig) {
     char segments_to_remove, *segment;
     size_t i, last_segment;

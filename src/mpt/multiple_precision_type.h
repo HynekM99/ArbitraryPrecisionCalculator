@@ -40,6 +40,8 @@ int mpt_is_zero(const mpt *mpv);
 
 int mpt_is_negative(const mpt *mpv);
 
+int mpt_is_odd(const mpt *mpv);
+
 mpt *mpt_optimize(const mpt *orig);
 
 void mpt_free(mpt **mpv);

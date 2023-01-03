@@ -317,46 +317,53 @@ mpt *mpt_mod(const mpt *mpv_dividend, const mpt *mpv_divisor) {
     return res;
 }
 
-mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent) {
-    mpt *new, *new_tmp, *exp_sub, *exp_sub_next, *one;
-    new = new_tmp = exp_sub = exp_sub_next = one = NULL;
+static mpt *mpt_pow_(const mpt *mpv_base, const mpt* mpv_exponent, const mpt *one, const mpt *two) {
+    mpt *new, *new_tmp, *div;
+    new = new_tmp = div = NULL;
 
-    #define EXIT_IF(v) \
-        if (v) { \
-            mpt_free(&new); \
-            goto clean_and_exit; \
-        }
-
-    EXIT_IF(!mpv_base || !mpv_exponent);
-
+    if (!mpv_base || !mpv_exponent || !one || !two) {
+        return NULL;
+    }
     if (mpt_is_negative(mpv_exponent)) {
         return create_mpt(0);
     }
     if (mpt_is_zero(mpv_exponent)) {
         return create_mpt(1);
     }
+    if (mpt_compare(mpv_exponent, one) == 0) {
+        return clone_mpt(mpv_base);
+    }
+    if (mpt_compare(mpv_exponent, two) == 0) {
+        return mpt_mul(mpv_base, mpv_base);
+    }
 
-    EXIT_IF(!(exp_sub = clone_mpt(mpv_exponent)));
-    EXIT_IF(!(new = clone_mpt(mpv_base)));
-    EXIT_IF(!(one = create_mpt(1)));
+    new_tmp = mpt_pow_(mpv_base, two, one, two);
+    div = mpt_div(mpv_exponent, two);
+    new = mpt_pow_(new_tmp, div, one, two);
 
-    while (mpt_compare(exp_sub, one) > 0) {
-        EXIT_IF(!(new_tmp = mpt_mul(new, mpv_base)));
-        EXIT_IF(!(exp_sub_next = mpt_sub(exp_sub, one)));
-
-        replace_mpt(&exp_sub, &exp_sub_next);
+    if (mpt_is_odd(mpv_exponent)) {
+        new_tmp = mpt_mul(new, mpv_base);
         replace_mpt(&new, &new_tmp);
     }
 
-  clean_and_exit:
     mpt_free(&new_tmp);
-    mpt_free(&exp_sub_next);
-    mpt_free(&one);
-    mpt_free(&exp_sub);
+    mpt_free(&div);
 
     return new;
+}
 
-    #undef EXIT_IF
+mpt *mpt_pow(const mpt *mpv_base, const mpt *mpv_exponent) {
+    mpt *res, *one, *two;
+    res = one = two = NULL;
+
+    one = create_mpt(1);
+    two = create_mpt(2);
+    res = mpt_pow_(mpv_base, mpv_exponent, one, two);
+
+    mpt_free(&one);
+    mpt_free(&two);
+
+    return res;
 }
 
 mpt *mpt_factorial(const mpt *mpv) {
