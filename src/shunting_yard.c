@@ -329,33 +329,28 @@ int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack *values) {
     char *c;
     size_t i;
     stack *stack_values = NULL;
-    if (!dest || !rpn_str || !values) {
-        return ERROR;
-    }
 
-    #define EXIT_IF_NOT(v, e) \
-        if (!(v)) { \
+    #define EXIT_IF(v, e) \
+        if (v) { \
             res = e; \
             goto clean_and_exit; \
         }
 
-    stack_values = stack_create(stack_item_count(values), values->item_size, mpt_free_wrapper_);
-    EXIT_IF_NOT(stack_values, ERROR);
+    EXIT_IF(!dest || !rpn_str || !values, ERROR);
+
+    EXIT_IF(!(stack_values = stack_create(stack_item_count(values), values->item_size, mpt_free_wrapper_)), ERROR);
 
     for (i = 0; i < vector_count(rpn_str); ++i) {
-        c = (char *)vector_at(rpn_str, i);
-        EXIT_IF_NOT(c, ERROR);
-
-        res = evaluate_rpn_char_(*c, values, stack_values);
-        EXIT_IF_NOT(res == RESULT_OK, res);
+        EXIT_IF(!(c = (char *)vector_at(rpn_str, i)), ERROR);
+        EXIT_IF((res = evaluate_rpn_char_(*c, values, stack_values)) != RESULT_OK, res);
     }
 
-    EXIT_IF_NOT(stack_item_count(stack_values) == 1, SYNTAX_ERROR);
-    EXIT_IF_NOT(stack_pop(stack_values, dest), ERROR);
+    EXIT_IF(stack_item_count(stack_values) != 1, SYNTAX_ERROR);
+    EXIT_IF(!stack_pop(stack_values, dest), ERROR);
     
   clean_and_exit:
     stack_free(&stack_values);
     return res;
 
-    #undef EXIT_IF_NOT
+    #undef EXIT_IF
 }

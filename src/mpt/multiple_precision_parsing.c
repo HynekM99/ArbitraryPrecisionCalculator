@@ -53,211 +53,146 @@ int parse_char(const char c, const enum bases base) {
 }
 
 mpt *mpt_parse_str_bin(const char **str) {
-    int negative = 0, msb_set = 0, char_value = 0;
-    mpt *target, *shifted, *mpv_negative;
-    target = shifted = mpv_negative = NULL;
-    if (!str || !*str) {
-        return NULL;
-    }
-    if (**str == '\000' || **str == ' ') {
-        return NULL;
-    }
+    int msb_set = 0, char_value = 0;
+    mpt *new, *shifted;
+    new = shifted = NULL;
 
-    target = create_mpt(0);
-    if (!target) {
-        return NULL;
-    }
+    #define EXIT_IF(v) \
+        if (v) { \
+            mpt_free(&new); \
+            goto clean_and_exit; \
+        }
 
-    if (*str[0] == '-') {
-        negative = 1;
-        ++(*str);
-    }
-    if (**str != '0' && **str != '1') {
-        mpt_free(&target);
-        return NULL;
-    }
+    EXIT_IF(!str || !*str);
+    
+    EXIT_IF(!(new = create_mpt(0)));
 
-    if (**str == '1') {
-        msb_set = 1;
-    }
+    msb_set = **str == '1';
 
-    char_value = parse_bin_char_(**str);
-    for (; char_value >= 0; char_value = parse_bin_char_(**str)) {
-        shifted = mpt_shift(target, 1, 1);
-        mpt_set_bit_to(shifted, 0, char_value);
-        replace_mpt(&target, &shifted);
-        ++(*str);
+    EXIT_IF((char_value = parse_bin_char_(**str)) < 0);
+    
+    while (char_value >= 0) {
+        shifted = mpt_shift(new, 1, 1);
+        EXIT_IF(!mpt_set_bit_to(shifted, 0, char_value));
+        replace_mpt(&new, &shifted);
+
+        char_value = parse_bin_char_(*(++*str));
     }
 
     if (msb_set) {
-        if (!fill_set_bits_(target)) {
-            mpt_free(&target);
-            return NULL;
-        }
+        EXIT_IF(!fill_set_bits_(new));
     }
 
-    if (negative) {
-        mpv_negative = mpt_negate(target);
-        replace_mpt(&target, &mpv_negative);
-    }
+  clean_and_exit:
+    mpt_free(&shifted);
+    return new;
 
-    return target;
+    #undef EXIT_IF
 }
 
 mpt *mpt_parse_str_dec(const char **str) {
-    int negative = 0, char_value;
-    mpt *target, *mpv_char, *multiplied, *added, *negated, *ten;
-    target = mpv_char = multiplied = added = negated = ten = NULL;
-    if (!str || !*str) {
-        return NULL;
-    }
-    if (**str == '\000' || **str == ' ') {
-        return NULL;
-    }
+    int char_value;
+    mpt *new, *mpv_char, *multiplied, *added, *ten;
+    new = mpv_char = multiplied = added = ten = NULL;
 
-    ten = create_mpt(10);
-    target = create_mpt(0);
-    if (!ten || !target) {
-        mpt_free(&ten);
-        mpt_free(&target);
-        return NULL;
-    }
+    #define EXIT_IF(v) \
+        if (v) { \
+            mpt_free(&new); \
+            goto clean_and_exit; \
+        }
 
-    if (**str == '-') {
-        negative = 1;
-        ++(*str);
-    }
+    EXIT_IF(!str || !*str);
 
-    char_value = parse_dec_char_(**str);
-    for (; char_value >= 0; char_value = parse_dec_char_(**str)) {
+    EXIT_IF(!(ten = create_mpt(10)));
+    EXIT_IF(!(new = create_mpt(0)));
+
+    EXIT_IF((char_value = parse_dec_char_(**str)) < 0);
+
+    while (char_value >= 0) {
         mpv_char = create_mpt(char_value);
-        multiplied = mpt_mul(target, ten);
+        multiplied = mpt_mul(new, ten);
         added = mpt_add(multiplied, mpv_char);
         mpt_free(&mpv_char);
         mpt_free(&multiplied);
-        replace_mpt(&target, &added);
+        replace_mpt(&new, &added);
 
-        if (!target) {
-            goto clean_and_exit;
-        }
+        EXIT_IF(!new);
 
-        ++(*str);
-    }
-
-    if (negative) {
-        negated = mpt_negate(target);
-        replace_mpt(&target, &negated);
+        char_value = parse_dec_char_(*(++*str));
     }
 
   clean_and_exit:
     mpt_free(&ten);
+    mpt_free(&added);
     mpt_free(&mpv_char);
     mpt_free(&multiplied);
 
-    return target;
+    return new;
+
+    #undef EXIT_IF
 }
 
 mpt *mpt_parse_str_hex(const char **str) {
-    int negative = 0, msb_set = 0, char_value;
-    mpt *target, *mpv_char, *shifted, *added, *mpv_negative;
-    target = mpv_char = shifted = added = mpv_negative = NULL;
-    if (!str || !*str) {
-        return NULL;
-    }
-    if (**str == '\000' || **str == ' ') {
-        return NULL;
-    }
+    int msb_set = 0, char_value;
+    mpt *new, *mpv_char, *shifted, *added;
+    new = mpv_char = shifted = added = NULL;
 
-    target = create_mpt(0);
-    if (!target) {
-        return 0;
-    }
+    #define EXIT_IF(v) \
+        if (v) { \
+            mpt_free(&new); \
+            goto clean_and_exit; \
+        }
 
-    if (**str == '-') {
-        negative = 1;
-        ++(*str);
-    }
-    if (parse_hex_char_(**str) >= 8) {
-        msb_set = 1;
-    }
+    EXIT_IF(!str || !*str);
 
-    char_value = parse_hex_char_(**str);
-    for (; char_value >= 0; char_value = parse_hex_char_(**str)) {
+    EXIT_IF(!(new = create_mpt(0)));
+
+    EXIT_IF((char_value = parse_hex_char_(**str)) < 0)
+
+    msb_set = char_value >= 8;
+
+    while (char_value >= 0) {
         mpv_char = create_mpt(char_value);
-        shifted = mpt_shift(target, 4, 1);
+        shifted = mpt_shift(new, 4, 1);
         added = mpt_add(shifted, mpv_char);
         mpt_free(&mpv_char);
         mpt_free(&shifted);
-        replace_mpt(&target, &added);
+        replace_mpt(&new, &added);
 
-        if (!target) {
-            goto clean_and_exit;
-        }
+        EXIT_IF(!new);
 
-        ++(*str);
+        char_value = parse_hex_char_(*(++*str));
     }
 
     if (msb_set) {
-        if (!fill_set_bits_(target)) {
-            mpt_free(&target);
-            goto clean_and_exit;
-        }
-    }
-
-    if (negative) {
-        mpv_negative = mpt_negate(target);
-        replace_mpt(&target, &mpv_negative);
+        EXIT_IF(!fill_set_bits_(new));
     }
 
   clean_and_exit:
     mpt_free(&mpv_char);
     mpt_free(&shifted);
     mpt_free(&added);
-    return target;
+    return new;
 }
 
 mpt *mpt_parse_str(const char **str) {
-    int is_negative = 0;
-    char c;
-    str_parser parser;
-    mpt *new, *mpv_negative;
-    new = mpv_negative = NULL;
+    str_parser parser = NULL;
+
     if (!str || !*str) {
         return NULL;
     }
-    c = **str;
 
-    if (c == '-') {
-        ++(*str);
-        c = **str;
-        is_negative = 1;
-        if (c == ' ') {
-            return NULL;
-        }
-    }
-
-    if (c == '0' && *(*str + 1) == 'b') {
+    if (**str == '0' && *(*str + 1) == 'b') {
         parser = mpt_parse_str_bin;
         *str += 2;
     }
-    else if (c == '0' && *(*str + 1) == 'x') {
+    else if (**str == '0' && *(*str + 1) == 'x') {
         parser = mpt_parse_str_hex;
         *str += 2;
     }
-    else if (c >= '0' && c <= '9') {
+    else if (**str >= '0' && **str <= '9') {
         parser = mpt_parse_str_dec;
     }
-    else {
-        return NULL;
-    }
 
-    new = parser(str);
-
-    if (is_negative) {
-        mpv_negative = mpt_negate(new);
-        mpt_free(&new);
-        return mpv_negative;
-    }
-
-    return new;
+    return parser ? parser(str) : NULL;
 }
