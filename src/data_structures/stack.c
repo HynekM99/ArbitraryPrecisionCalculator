@@ -73,12 +73,16 @@ int stack_isempty(const stack *s) {
 }
 
 void stack_clear(stack *s) {
+    size_t i;
     void *item = NULL;
-    while (stack_pop(s, item)) {
-        if (s->deallocator) {
-            s->deallocator(item);
+
+    if (s->deallocator) {
+        for (i = 0; i < stack_item_count(s); ++i) {
+            s->deallocator(stack_at_(s, i));
         }
     }
+
+    while (stack_pop(s, &item));
 }
 
 void stack_free(stack **s) {

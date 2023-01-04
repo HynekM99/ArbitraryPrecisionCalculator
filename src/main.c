@@ -77,6 +77,8 @@ int evaluate_expression(const char *input, enum bases *out) {
         default: break;
     }
     
+    goto clean_and_exit;
+    
     if (res != SYNTAX_OK) {
         goto clean_and_exit;
     }
