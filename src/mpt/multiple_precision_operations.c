@@ -351,7 +351,8 @@ static mpt *mpt_pow_(const mpt *mpv_base, const mpt* mpv_exponent, const mpt *on
     new_tmp = mpt_pow_(mpv_base, two, one, two);
     div = mpt_div(mpv_exponent, two);
     new = mpt_pow_(new_tmp, div, one, two);
-
+    mpt_free(&new_tmp);
+    
     if (mpt_is_odd(mpv_exponent)) {
         new_tmp = mpt_mul(new, mpv_base);
         replace_mpt(&new, &new_tmp);

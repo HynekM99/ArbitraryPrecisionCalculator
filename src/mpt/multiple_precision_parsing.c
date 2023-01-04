@@ -85,6 +85,7 @@ mpt *mpt_parse_str_bin(const char **str) {
 
   clean_and_exit:
     mpt_free(&shifted);
+
     return new;
 
     #undef EXIT_IF
@@ -172,7 +173,10 @@ mpt *mpt_parse_str_hex(const char **str) {
     mpt_free(&mpv_char);
     mpt_free(&shifted);
     mpt_free(&added);
+
     return new;
+
+    #undef EXIT_IF
 }
 
 mpt *mpt_parse_str(const char **str) {
