@@ -76,9 +76,7 @@ int evaluate_expression(const char *input, enum bases *out) {
         case ERROR:          printf("Error while parsing!\n"); break;
         default: break;
     }
-    
-    goto clean_and_exit;
-    
+
     if (res != SYNTAX_OK) {
         goto clean_and_exit;
     }
