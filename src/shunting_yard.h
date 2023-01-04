@@ -18,8 +18,8 @@
 #include "operators.h"
 #include "mpt/mpt.h"
 
-int shunt(const char *str, vector_type **rpn_str, stack **values);
+int shunt(const char *str, vector_type **rpn_str, stack_type **values);
 
-int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack *values);
+int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack_type *values);
 
 #endif

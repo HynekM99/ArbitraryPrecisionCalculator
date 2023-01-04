@@ -1,5 +1,5 @@
 /**
- * @file stack.h
+ * @file stack_type.h
  * @author František Pártl (fpartl@kiv.zcu.cz)
  * @brief Hlavičkový soubor s deklaracemi funkcí pracujících se zásobníkovou strukturou.
  * @version 1.0
@@ -13,28 +13,28 @@
 
 /**
  * @brief Definice ukazatele na obecnou funkci, která umí uvolnit prvek uložený v zásobníku.
- *        Využívá se ve funkci stack_free.
+ *        Využívá se ve funkci stack_deallocate.
  */
 typedef void (*stack_it_dealloc_type)(void *item);
 
 /**
  * @brief Definice zásobníkové struktury s možností vložení libovolně velkého prvku.
  */
-typedef struct stack_ {
+typedef struct stack_type_ {
     size_t size;
     size_t item_size;
     size_t sp;
     void *items;
     stack_it_dealloc_type deallocator;
-} stack;
+} stack_type;
 
 /**
  * @brief Funkce pro vytvoření nového zásobníku.
  * @param size Maximální počet položek zásobníku.
  * @param item_size Velikost jednoho prvku zásobníku.
- * @return stack* Ukazatel na nově dynamicky alokovaný zásobník nebo NULL při chybě.
+ * @return stack_type* Ukazatel na nově dynamicky alokovaný zásobník nebo NULL při chybě.
  */
-stack *stack_create(const size_t size, const size_t item_size, const stack_it_dealloc_type deallocator);
+stack_type *stack_allocate(const size_t size, const size_t item_size, const stack_it_dealloc_type deallocator);
 
 /**
  * @brief Funkce pro vložení nového prvku na vrchol zásobníku.
@@ -42,7 +42,7 @@ stack *stack_create(const size_t size, const size_t item_size, const stack_it_de
  * @param item Vkládaný záznam.
  * @return int 1 pokud vše dopadlo dobře, jinak 0.
  */
-int stack_push(stack *s, const void *item);
+int stack_push(stack_type *s, const void *item);
 
 /**
  * @brief Funkce pro odebrání prvku z vrcholu zásobníku.
@@ -50,7 +50,7 @@ int stack_push(stack *s, const void *item);
  * @param item Ukazatel na paměť, kam bude odebraný prvek zkopírován.
  * @return int 1, pokud vše dopadlo dobře, jinak 0.
  */
-int stack_pop(stack *s, void *item);
+int stack_pop(stack_type *s, void *item);
 
 /**
  * @brief Funkce pro získání prvku z vrcholu zásobníku.
@@ -58,28 +58,32 @@ int stack_pop(stack *s, void *item);
  * @param item Ukazatel na paměť, kam se přečtený prvek zkopíruje.
  * @return int 1, pokud všech dopadlo dobře, jinak 0.
  */
-int stack_head(const stack *s, void *item);
+int stack_head(const stack_type *s, void *item);
 
 /**
  * @brief Funkce vrátí počet prvků v zásobníku.
  * @param s Ukazatel na zásobník.
  * @return uint Počet prvků v zásobníku.
  */
-size_t stack_item_count(const stack *s);
+size_t stack_item_count(const stack_type *s);
 
 /**
  * @brief Říká, zda je zadaný zásobník prázdný nebo obsahuje nějaké prvky.
  * @param v Ukazatel na zásobník.
  * @return int 1, pokud je zásobník prázdný, jinak 0.
  */
-int stack_isempty(const stack *s);
+int stack_isempty(const stack_type *s);
 
-void stack_clear(stack *s);
+/**
+ * @brief Funkce pro uvolnění prvků v zásobníku z paměti a jejich odstranění ze zásobníku.
+ * @param ss Ukazatel na zásobník, který bude vyčištěn.
+ */
+void stack_clear(stack_type *s);
 
 /**
  * @brief Funkce pro uvolnění zásobníkové struktury z paměti.
  * @param ss Ukazatel na ukazatel na zásobník, který bude uvolněn.
  */
-void stack_free(stack **s);
+void stack_deallocate(stack_type **s);
 
 #endif

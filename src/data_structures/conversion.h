@@ -4,6 +4,6 @@
 #include "vector.h"
 #include "stack.h"
 
-stack *vector_to_stack(vector_type **v);
+stack_type *vector_to_stack(vector_type **v);
 
 #endif

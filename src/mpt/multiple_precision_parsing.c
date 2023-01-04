@@ -59,13 +59,13 @@ mpt *mpt_parse_str_bin(const char **str) {
 
     #define EXIT_IF(v) \
         if (v) { \
-            mpt_free(&new); \
+            mpt_deallocate(&new); \
             goto clean_and_exit; \
         }
 
     EXIT_IF(!str || !*str);
     
-    EXIT_IF(!(new = create_mpt(0)));
+    EXIT_IF(!(new = mpt_allocate(0)));
 
     msb_set = **str == '1';
 
@@ -74,7 +74,7 @@ mpt *mpt_parse_str_bin(const char **str) {
     while (char_value >= 0) {
         shifted = mpt_shift(new, 1, 1);
         EXIT_IF(!mpt_set_bit_to(shifted, 0, char_value));
-        replace_mpt(&new, &shifted);
+        mpt_replace(&new, &shifted);
 
         char_value = parse_bin_char_(*(++*str));
     }
@@ -84,7 +84,7 @@ mpt *mpt_parse_str_bin(const char **str) {
     }
 
   clean_and_exit:
-    mpt_free(&shifted);
+    mpt_deallocate(&shifted);
 
     return new;
 
@@ -98,24 +98,24 @@ mpt *mpt_parse_str_dec(const char **str) {
 
     #define EXIT_IF(v) \
         if (v) { \
-            mpt_free(&new); \
+            mpt_deallocate(&new); \
             goto clean_and_exit; \
         }
 
     EXIT_IF(!str || !*str);
 
-    EXIT_IF(!(ten = create_mpt(10)));
-    EXIT_IF(!(new = create_mpt(0)));
+    EXIT_IF(!(ten = mpt_allocate(10)));
+    EXIT_IF(!(new = mpt_allocate(0)));
 
     EXIT_IF((char_value = parse_dec_char_(**str)) < 0);
 
     while (char_value >= 0) {
-        mpv_char = create_mpt(char_value);
+        mpv_char = mpt_allocate(char_value);
         multiplied = mpt_mul(new, ten);
         added = mpt_add(multiplied, mpv_char);
-        mpt_free(&mpv_char);
-        mpt_free(&multiplied);
-        replace_mpt(&new, &added);
+        mpt_deallocate(&mpv_char);
+        mpt_deallocate(&multiplied);
+        mpt_replace(&new, &added);
 
         EXIT_IF(!new);
 
@@ -123,10 +123,10 @@ mpt *mpt_parse_str_dec(const char **str) {
     }
 
   clean_and_exit:
-    mpt_free(&ten);
-    mpt_free(&added);
-    mpt_free(&mpv_char);
-    mpt_free(&multiplied);
+    mpt_deallocate(&ten);
+    mpt_deallocate(&added);
+    mpt_deallocate(&mpv_char);
+    mpt_deallocate(&multiplied);
 
     return new;
 
@@ -140,25 +140,25 @@ mpt *mpt_parse_str_hex(const char **str) {
 
     #define EXIT_IF(v) \
         if (v) { \
-            mpt_free(&new); \
+            mpt_deallocate(&new); \
             goto clean_and_exit; \
         }
 
     EXIT_IF(!str || !*str);
 
-    EXIT_IF(!(new = create_mpt(0)));
+    EXIT_IF(!(new = mpt_allocate(0)));
 
     EXIT_IF((char_value = parse_hex_char_(**str)) < 0)
 
     msb_set = char_value >= 8;
 
     while (char_value >= 0) {
-        mpv_char = create_mpt(char_value);
+        mpv_char = mpt_allocate(char_value);
         shifted = mpt_shift(new, 4, 1);
         added = mpt_add(shifted, mpv_char);
-        mpt_free(&mpv_char);
-        mpt_free(&shifted);
-        replace_mpt(&new, &added);
+        mpt_deallocate(&mpv_char);
+        mpt_deallocate(&shifted);
+        mpt_replace(&new, &added);
 
         EXIT_IF(!new);
 
@@ -170,9 +170,9 @@ mpt *mpt_parse_str_hex(const char **str) {
     }
 
   clean_and_exit:
-    mpt_free(&mpv_char);
-    mpt_free(&shifted);
-    mpt_free(&added);
+    mpt_deallocate(&mpv_char);
+    mpt_deallocate(&shifted);
+    mpt_deallocate(&added);
 
     return new;
 

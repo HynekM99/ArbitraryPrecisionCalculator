@@ -4,19 +4,19 @@
 #include "shunting_yard.h"
 #include "data_structures/conversion.h"
 
-static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values);
+static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack_type *operator_stack, vector_type *vector_values);
 
 static void mpt_free_wrapper_(void *poor) {
-    mpt_free(poor);
+    mpt_deallocate(poor);
 }
 
-static int is_end_char(const char c) {
+static int is_end_char_(const char c) {
     return c == 0 || c == '\n';
 }
 
 static size_t get_operator_count_(const char *str) {
     size_t i = 0;
-    for (; !is_end_char(*str); ++str) {
+    for (; !is_end_char_(*str); ++str) {
         if (get_func_operator(*str) || *str == '(') {
             ++i;
         }
@@ -31,7 +31,7 @@ static int push_parsed_value_(const mpt *mpv, vector_type *rpn_str, vector_type 
         vector_push_back(values, &mpv);
 }
 
-static int push_operator_(const char operator, vector_type *rpn_str, stack *operator_stack) {
+static int push_operator_(const char operator, vector_type *rpn_str, stack_type *operator_stack) {
     char c = 0;
     const func_oper_type *o1, *o2;
     o1 = o2 = NULL;
@@ -84,7 +84,7 @@ static int shunt_value_(const char **str, char *last_operator, vector_type *rpn_
     mpt *parsed_value = mpt_parse_str(str);
 
     if (!push_parsed_value_(parsed_value, rpn_str, vector_values)) {
-        mpt_free(&parsed_value);
+        mpt_deallocate(&parsed_value);
         return 0;
     }
 
@@ -122,7 +122,7 @@ static int infix_syntax_ok_(const char c, const char last_operator) {
 
 static char *find_closing_bracket_(const char *str) {
     size_t l_brackets = 1, r_brackets = 0;
-    for (; !is_end_char(*str); ++str) {
+    for (; !is_end_char_(*str); ++str) {
         switch (*str) {
             case '(': ++l_brackets; break;
             case ')': ++r_brackets; break;
@@ -137,7 +137,7 @@ static char *find_closing_bracket_(const char *str) {
     return NULL;
 }
 
-static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
+static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_str, stack_type *operator_stack, vector_type *vector_values) {
     int res;
     const func_oper_type *last_func; 
     char minus = 0, *closing_bracket = NULL;
@@ -177,12 +177,12 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
     else {
         EXIT_IF(!(closing_bracket = find_closing_bracket_(*str + 1)), SYNTAX_ERROR);
 
-        for (; !is_end_char(**str) && *str <= closing_bracket; ++*str) {
+        for (; !is_end_char_(**str) && *str <= closing_bracket; ++*str) {
             EXIT_IF((res = shunt_char_(str, last_operator, rpn_str, operator_stack, vector_values)) != SYNTAX_OK, res);
         }
     }
 
-    for (; !is_end_char(**str) && **str == '!'; ++*str) {
+    for (; !is_end_char_(**str) && **str == '!'; ++*str) {
         EXIT_IF((res = shunt_char_(str, last_operator, rpn_str, operator_stack, vector_values)) != SYNTAX_OK, res);
     }
     --*str;
@@ -194,7 +194,7 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
     #undef EXIT_IF
 }
 
-static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack *operator_stack, vector_type *vector_values) {
+static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack_type *operator_stack, vector_type *vector_values) {
     #define EXIT_IF(v, e) \
         if (v) { \
             return e; \
@@ -238,7 +238,7 @@ static int get_math_error_bi_func_(const char operator, const mpt *b) {
     return MATH_ERROR;
 }
 
-static int evaluate_rpn_char_(const char c, stack *orig_values, stack *stack_values) {
+static int evaluate_rpn_char_(const char c, stack_type *orig_values, stack_type *stack_values) {
     int res = RESULT_OK;
     const func_oper_type *function = NULL;
     mpt *a, *b, *result;
@@ -273,8 +273,8 @@ static int evaluate_rpn_char_(const char c, stack *orig_values, stack *stack_val
     }
 
   clean_and_exit:
-    mpt_free(&a);
-    mpt_free(&b);
+    mpt_deallocate(&a);
+    mpt_deallocate(&b);
 
     if (result && !stack_push(stack_values, &result)) {
         return ERROR;
@@ -284,10 +284,10 @@ static int evaluate_rpn_char_(const char c, stack *orig_values, stack *stack_val
     #undef EXIT_IF
 }
 
-int shunt(const char *str, vector_type **rpn_str, stack **values) {
+int shunt(const char *str, vector_type **rpn_str, stack_type **values) {
     int res = SYNTAX_OK;
     char c, last_operator = 0;
-    stack *operator_stack = NULL;
+    stack_type *operator_stack = NULL;
     vector_type *vector_values = NULL;
 
     #define EXIT_IF(v, e) \
@@ -296,15 +296,15 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
             goto clean_and_exit; \
         }
 
-    EXIT_IF(!str || is_end_char(*str) || !rpn_str || !values, ERROR);
+    EXIT_IF(!str || is_end_char_(*str) || !rpn_str || !values, ERROR);
 
-    operator_stack = stack_create(get_operator_count_(str), sizeof(char), NULL);
+    operator_stack = stack_allocate(get_operator_count_(str), sizeof(char), NULL);
     vector_values = vector_allocate(sizeof(mpt *), mpt_free_wrapper_);
     *rpn_str = vector_allocate(sizeof(char), NULL);
 
     EXIT_IF(!operator_stack || !*rpn_str || !vector_values, ERROR);
 
-    for (; !is_end_char(*str); ++str) {
+    for (; !is_end_char_(*str); ++str) {
         EXIT_IF((res = shunt_char_(&str, &last_operator, *rpn_str, operator_stack, vector_values)) != SYNTAX_OK, res);
     }
 
@@ -317,11 +317,11 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
 
   clean_and_exit:
     vector_deallocate(&vector_values);
-    stack_free(&operator_stack);
+    stack_deallocate(&operator_stack);
 
     if (res != SYNTAX_OK) {
         vector_deallocate(rpn_str);
-        stack_free(values);
+        stack_deallocate(values);
     }
 
     return res;
@@ -329,11 +329,11 @@ int shunt(const char *str, vector_type **rpn_str, stack **values) {
     #undef EXIT_IF
 }
 
-int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack *values) {
+int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack_type *values) {
     int res = RESULT_OK;
     char *c;
     size_t i;
-    stack *stack_values = NULL;
+    stack_type *stack_values = NULL;
 
     #define EXIT_IF(v, e) \
         if (v) { \
@@ -343,7 +343,7 @@ int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack *values) {
 
     EXIT_IF(!dest || !rpn_str || !values, ERROR);
 
-    EXIT_IF(!(stack_values = stack_create(stack_item_count(values), values->item_size, mpt_free_wrapper_)), ERROR);
+    EXIT_IF(!(stack_values = stack_allocate(stack_item_count(values), values->item_size, mpt_free_wrapper_)), ERROR);
 
     for (i = 0; i < vector_count(rpn_str); ++i) {
         EXIT_IF(!(c = (char *)vector_at(rpn_str, i)), ERROR);
@@ -354,7 +354,7 @@ int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack *values) {
     EXIT_IF(!stack_pop(stack_values, dest), ERROR);
     
   clean_and_exit:
-    stack_free(&stack_values);
+    stack_deallocate(&stack_values);
     return res;
 
     #undef EXIT_IF

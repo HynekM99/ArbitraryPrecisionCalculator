@@ -12,19 +12,19 @@ typedef struct _mpt {
     vector_type *list;
 } mpt;
 
-mpt *create_mpt(const char init_value);
+mpt *mpt_allocate(const char init_value);
 
-int init_mpt(mpt *mpv, const char init_value);
+mpt *mpt_clone(const mpt *orig);
 
-mpt *clone_mpt(const mpt *orig);
+void mpt_replace(mpt **to_replace, mpt **replace_with);
 
-void replace_mpt(mpt **to_replace, mpt **replace_with);
+size_t mpt_bits_in_segment(const mpt *mpv);
+
+size_t mpt_segment_count(const mpt *mpv);
 
 size_t mpt_bit_count(const mpt *mpv);
 
 int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set);
-
-size_t mpt_bits_in_segment(const mpt *mpv);
 
 char *mpt_get_segment_ptr(const mpt *mpv, const size_t index);
 
@@ -44,6 +44,6 @@ int mpt_is_odd(const mpt *mpv);
 
 mpt *mpt_optimize(const mpt *orig);
 
-void mpt_free(mpt **mpv);
+void mpt_deallocate(mpt **mpv);
 
 #endif

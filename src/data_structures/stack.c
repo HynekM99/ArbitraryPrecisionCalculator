@@ -4,18 +4,18 @@
 #include <stdio.h>
 #include <string.h>
 
-static void *stack_at_(const stack *s, const size_t at) {
+static void *stack_at_(const stack_type *s, const size_t at) {
     return (char *)s->items + at * s->item_size;
 } 
 
-stack *stack_create(const size_t size, const size_t item_size, const stack_it_dealloc_type deallocator) {
-    stack *new;
+stack_type *stack_allocate(const size_t size, const size_t item_size, const stack_it_dealloc_type deallocator) {
+    stack_type *new;
     
     if (size == 0 || item_size == 0) {
         return NULL;
     }
 
-    new = (stack *)malloc(sizeof(stack));
+    new = (stack_type *)malloc(sizeof(stack_type));
     if (!new) {
         return NULL;
     }
@@ -34,7 +34,7 @@ stack *stack_create(const size_t size, const size_t item_size, const stack_it_de
     return new;
 }
 
-int stack_push(stack *s, const void *item) {
+int stack_push(stack_type *s, const void *item) {
     if (!s || !item || s->sp >= s->size) {
         return 0;
     }
@@ -45,7 +45,7 @@ int stack_push(stack *s, const void *item) {
     return 1;
 }
 
-int stack_pop(stack *s, void *item) {
+int stack_pop(stack_type *s, void *item) {
     if (stack_head(s, item)) {
         --s->sp;
         return 1;
@@ -55,7 +55,7 @@ int stack_pop(stack *s, void *item) {
     }
 }
 
-int stack_head(const stack *s, void *item) {
+int stack_head(const stack_type *s, void *item) {
     if (stack_isempty(s) || !item) {
         return 0;
     }
@@ -64,15 +64,15 @@ int stack_head(const stack *s, void *item) {
     return 1;
 }
 
-size_t stack_item_count(const stack *s) {
+size_t stack_item_count(const stack_type *s) {
     return s ? s->sp : 0;
 }
 
-int stack_isempty(const stack *s) {
+int stack_isempty(const stack_type *s) {
     return stack_item_count(s) == 0;
 }
 
-void stack_clear(stack *s) {
+void stack_clear(stack_type *s) {
     size_t i;
     void *item = NULL;
 
@@ -85,7 +85,7 @@ void stack_clear(stack *s) {
     while (stack_pop(s, &item));
 }
 
-void stack_free(stack **s) {
+void stack_deallocate(stack_type **s) {
     if (!s || !*s) {
         return;
     }

@@ -1,18 +1,17 @@
-#include <stddef.h>
 #include "operators.h"
 
 /**
  * @brief Pole dostupných operací a konstanta, která udržuje jejich počet.
  */
 const func_oper_type OPERATORS[] = {
-    { '+', mpt_add, NULL, 1, left },
-    { '-', mpt_sub, NULL, 1, left },
+    { '!', NULL, mpt_factorial, 4, left },
+    { '^', mpt_pow, NULL, 4, right },
+    { RPN_UNARY_MINUS_SYMBOL, NULL, mpt_negate, 3, right },
     { '*', mpt_mul, NULL, 3, left },
     { '/', mpt_div, NULL, 3, left },
     { '%', mpt_mod, NULL, 2, left },
-    { '^', mpt_pow, NULL, 4, right },
-    { '!', NULL, mpt_factorial, 4, left },
-    { RPN_UNARY_MINUS_SYMBOL, NULL, mpt_negate, 3, right }
+    { '+', mpt_add, NULL, 1, left },
+    { '-', mpt_sub, NULL, 1, left },
 };
 const size_t OPERATORS_COUNT = sizeof(OPERATORS) / sizeof(*OPERATORS);
 
