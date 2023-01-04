@@ -155,7 +155,6 @@ mpt *mpt_add(const mpt *mpv_a, const mpt *mpv_b) {
         segments = vector_count(mpv_b->list);
     }
 
-    EXIT_IF(!(new_tmp = create_mpt(0)));
     EXIT_IF(!vector_clear(new_tmp->list));
 
     for (i = 0; i < segments + 1; ++i) {
