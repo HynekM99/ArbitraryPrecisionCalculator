@@ -1,5 +1,12 @@
 #include "multiple_precision_operations.h"
 
+/**
+ * \brief Zjistí, jestli má být příznak carry nastaven, když sečteme a, b a předchozí carry.
+ * \param a První hodnota pro sečtení.
+ * \param b Druhá hodnota pro sečtení.
+ * \param carry Předchozí carry.
+ * \return char 1 jestli má být příznak carry nastaven, 0 pokud ne.
+ */
 static char addition_carry_(const unsigned char a, const unsigned char b, const unsigned char carry) {
     unsigned char c = a + b;
     return (c < a) || (c == 255 && carry == 1);
@@ -17,6 +24,7 @@ int mpt_compare(const mpt *a, const mpt *b) {
     RETURN_IF(!a && !b, 0);
     RETURN_IF(!a, -1);
     RETURN_IF(!b, 1);
+    RETURN_IF(a == b, 0);
 
     RETURN_IF(mpt_is_zero(a) && mpt_is_zero(b), 0);
     RETURN_IF(mpt_signum(a) > mpt_signum(b), 1);
@@ -63,7 +71,7 @@ mpt *mpt_abs(const mpt *value) {
     return mpt_clone(value);
 }
 
-mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
+mpt *mpt_shift(const mpt *value, const size_t positions, const int shift_left) {
     size_t i, j;
     mpt *new, *new_tmp;
     new = new_tmp = NULL;
@@ -73,7 +81,7 @@ mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
             goto clean_and_exit; \
         }
 
-    EXIT_IF(!orig);
+    EXIT_IF(!value);
     EXIT_IF(!(new_tmp = mpt_allocate(0)));
 
     if (shift_left) {
@@ -84,8 +92,8 @@ mpt *mpt_shift(const mpt *orig, const size_t positions, const int shift_left) {
         j = 0;
     }
 
-    for (; i < mpt_bit_count(orig) + mpt_bits_in_segment(orig); ++i, ++j) {
-        EXIT_IF(!mpt_set_bit_to(new_tmp, j, mpt_get_bit(orig, i)));
+    for (; i < mpt_bit_count(value) + mpt_bits_in_segment(value); ++i, ++j) {
+        EXIT_IF(!mpt_set_bit_to(new_tmp, j, mpt_get_bit(value, i)));
     }
 
     EXIT_IF(!vector_remove(new_tmp->list, 1));

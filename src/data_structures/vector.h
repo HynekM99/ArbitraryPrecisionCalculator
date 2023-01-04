@@ -2,7 +2,8 @@
  * @file vector_type.h
  * @authors František Pártl (fpartl@kiv.zcu.cz), Hynek Moudrý (hmoudry@students.zcu.cz)
  * @brief Hlavičkový soubor knihovny dynamicky realokovaného pole.
- * @date 2022-11-30
+ * @version 1.0
+ * @date 2023-01-04
  */
 
 #ifndef _VECTOR_H
@@ -64,6 +65,11 @@ int vector_init(vector_type *v, const size_t item_size, const vec_it_dealloc_typ
  */
 void vector_deinit(vector_type *v);
 
+/**
+ * @brief Odstraní a případně uvolní všechny prvky vektoru.
+ * @param v Ukazatel na vektor, z něhož se prvky odstraňují.
+ * @return int 1, pokud se odstranění prvků povedlo, jinak 0.
+ */
 int vector_clear(vector_type *v);
 
 /**
@@ -73,6 +79,11 @@ int vector_clear(vector_type *v);
  */
 void vector_deallocate(vector_type **v);
 
+/**
+ * @brief Alokuje nový vektor s mělkou kopií dat zadaného vektoru.
+ * @param src Ukazatel na vektor.
+ * @return vector_type* Ukazatel na zkopírovaný vektor.
+ */
 vector_type *vector_clone(const vector_type *src);
 
 /**
@@ -85,7 +96,7 @@ size_t vector_capacity(const vector_type *v);
 /**
  * @brief Vrátí počet prvků vektoru.
  * @param v Ukazatel na vektor.
- * @return int Počet zapsaných prvků ve vektoru.
+ * @return size_t Počet zapsaných prvků ve vektoru.
  */
 size_t vector_count(const vector_type *v);
 
@@ -106,7 +117,6 @@ int vector_realloc(vector_type *v, const size_t capacity);
 
 /**
  * @brief Vrací ukazatel na at-tý prvek vektoru v. V případě neexistence prvku vratí NULL.
- * 
  * @param v Ukazatel na vektor.
  * @param at Index prvku ve vektoru.
  * @return void* Ukazatel na prvek vektoru nebo NULL při neexistenci prvku.
@@ -115,18 +125,24 @@ void *vector_at(const vector_type *v, const size_t at);
 
 /**
  * @brief Přidá prvek do vektoru. V případě chyby není vektor daný ukazatel v změněn.
- * @param v Ukazatel na vektor, kam se prvke přidává.
+ * @param v Ukazatel na vektor, kam se prvek přidává.
  * @param item Ukazatel na přidávaný prvek.
  * @return int 1, pokud se přidání prvku povedlo, jinak 0.
  */
 int vector_push_back(vector_type *v, const void *item);
 
+/**
+ * @brief Odstraní zadaný počet prvků z konce vektoru. 
+ *        Pokud je zadaný počet větší než počet prvků ve vektoru, odstraní všechny prvky.
+ * @param v Ukazatel na vektor, z něhož se prvky odstraňují.
+ * @param count Počet prvků k odstranění.
+ * @return int 1, pokud se odstranění prvků povedlo, jinak 0.
+ */
 int vector_remove(vector_type *v, size_t count);
 
 /**
  * @brief Funkce zadanému vektoru odebere vlastnictví udržovaného ukazatele na dynamicky
  *        alokovaný buffer. 
- * 
  * @param v Ukazatel na vektor, nad jehož daty přebíráme kontrolu.
  * @return void* Ukazatel na data získaná z vektoru.
  */

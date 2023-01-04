@@ -7,8 +7,7 @@ stack_type *vector_to_stack(vector_type **v) {
         return NULL;
     }
 
-    s = stack_allocate(vector_count(*v), (*v)->item_size, (*v)->deallocator);
-    if (!s) {
+    if (!(s = stack_allocate(vector_count(*v), (*v)->item_size, (*v)->deallocator))) {
         return NULL;
     }
 

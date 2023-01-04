@@ -8,12 +8,23 @@
  *        Funkce je deklarovaná jako statická, tj. její viditelnost je omezena na její objektový soubor.
  *        Vytvořili jsme tedy takové typově bezpečné makro. Jak jsme viděli na druhém cvičení, optimalizátor funkci
  *        celkem jistě inlinuje, takže se nemusíme bát drahého funkčního volání.
- * \param v Přistupovaný vektor.
+ * \param v Ukazatek na vektor.
  * \param at Index prvku ve vektoru.
  * \return void* Ukazatel na at-tý prvek ve vektoru *v.
  */
 static void *vector_at_(const vector_type *v, const size_t at) {
     return (char *)v->data + (at * v->item_size);
+}
+
+/**
+ * \brief Uvolní at-tý prvek vektoru v, pokud má vektor dealokátor. Neprovádí kontrolu rozsahu přistupovaného vektoru.
+ * \param v Ukazatel na vektor.
+ * \param at Index prvku ve vektoru.
+ */
+static void deallocate_at_(const vector_type *v, const size_t at) {
+    if (v && v->deallocator && at > vector_count(v) - 1) {
+        v->deallocator(vector_at_(v, at));
+    }
 }
 
 vector_type *vector_allocate(const size_t item_size, const vec_it_dealloc_type deallocator) {
@@ -62,10 +73,8 @@ void vector_deinit(vector_type *v) {
         return;
     }
 
-    if (v->deallocator) {
-        for (i = 0; i < vector_count(v); ++i) {
-            v->deallocator(vector_at_(v, i));
-        }
+    for (i = 0; i < vector_count(v); ++i) {
+        deallocate_at_(v, i);
     }
 
     if (v->data) {
@@ -94,12 +103,12 @@ void vector_deallocate(vector_type **v) {
 
 vector_type *vector_clone(const vector_type *src) {
     vector_type *dest = NULL;
+    
     if (!src) {
         return NULL;
     }
 
-    dest = vector_allocate(src->item_size, src->deallocator);
-    if (!dest) {
+    if (!(dest = vector_allocate(src->item_size, src->deallocator))) {
         return NULL;
     }
 
@@ -157,23 +166,20 @@ void *vector_at(const vector_type *v, const size_t at) {
 }
 
 int vector_remove(vector_type *v, size_t count) {
-    size_t i, index, vec_count;
+    size_t i;
+
     if (!v) {
         return 0;
     }
 
-    vec_count = vector_count(v);
-
-    if (count > vec_count) {
-        count = vec_count;
+    if (count >= vector_count(v)) {
+        return vector_clear(v);
     }
 
     for (i = 0; i < count; ++i) {
-        index = vec_count - i - 1;
-        if (v->deallocator) {
-            v->deallocator(vector_at_(v, index));
-        }
+        deallocate_at_(v, vector_count(v) - i - 1);
     }
+    
 
     v->count -= count;
     return 1;

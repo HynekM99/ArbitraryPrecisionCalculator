@@ -4,6 +4,12 @@
 #include <stdio.h>
 #include <string.h>
 
+/**
+ * \brief Vrací ukazatel na at-tý prvek zásobníku v. Neprovádí kontrolu rozsahu přistupovaného zásobníku.
+ * \param s Ukazatel na zásobník.
+ * \param at Index prvku v zásobníku.
+ * \return void* Ukazatel na at-tý prvek v zásobníku *v.
+ */
 static void *stack_at_(const stack_type *s, const size_t at) {
     return (char *)s->items + at * s->item_size;
 } 

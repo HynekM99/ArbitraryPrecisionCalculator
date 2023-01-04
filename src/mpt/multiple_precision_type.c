@@ -1,6 +1,4 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include "multiple_precision_type.h"
 
 static int mpt_add_segments_(mpt *mpv, const size_t segments_to_add) {
@@ -103,7 +101,18 @@ size_t mpt_segment_count(const mpt *mpv) {
 
 size_t mpt_bit_count(const mpt *mpv) {
     return mpt_segment_count(mpv) * mpt_bits_in_segment(mpv);
-    return mpv ? vector_count(mpv->list) * mpt_bits_in_segment(mpv) : 0;
+}
+
+char *mpt_get_segment_ptr(const mpt *mpv, const size_t index) {
+    return mpv ? (char *)vector_at(mpv->list, index) : NULL;
+}
+
+char mpt_get_segment(const mpt *mpv, const size_t index) {
+    if (index >= vector_count(mpv->list)) {
+        return mpt_get_msb(mpv) * 0xff;
+    }
+
+    return *mpt_get_segment_ptr(mpv, index);
 }
 
 int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set) {
@@ -137,18 +146,6 @@ int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set) {
     }
 
     return 1;
-}
-
-char *mpt_get_segment_ptr(const mpt *mpv, const size_t index) {
-    return (char *)vector_at(mpv->list, index);
-}
-
-char mpt_get_segment(const mpt *mpv, const size_t index) {
-    if (index >= vector_count(mpv->list)) {
-        return mpt_get_msb(mpv) * 0xff;
-    }
-
-    return *mpt_get_segment_ptr(mpv, index);
 }
 
 int mpt_get_bit(const mpt *mpv, const size_t bit) {

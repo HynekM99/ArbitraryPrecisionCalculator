@@ -1,3 +1,11 @@
+/**
+ * \file main.c
+ * \authors Hynek Moudrý (hmoudry@students.zcu.cz)
+ * \brief Celočíselná kalkulačka s neomezenou přesností.
+ * \version 1.0
+ * \date 2023-01-04
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,14 +14,48 @@
 #include "operators.h"
 #include "shunting_yard.h"
 
+/** Makro s hodnotou vyhodnocení příkazu pro ukončení programu */
 #define QUIT_CODE -1
+
+/** Makra pro úspěšnost vyhodnocení příkazu */
+
 #define EVALUATION_FAILURE 0
 #define EVALUATION_SUCCESS 1
 
+/** 
+ * \brief Zjistí, jestli je znak ukončující, tedy nulový nebo '\n'
+ * \param c Znak.
+ * \return int 1 jestli je znak ukončující, jinak 0
+*/
 static int is_end_char_(const char c) {
     return c == 0 || c == '\n';
 }
 
+/** 
+ * \brief Zjistí, jestli je řetězec prázdný, tedy složený pouze z mezer.
+ * \param str Řetězec.
+ * \return int 1 jestli je řetězec prázdný, jinak 0
+*/
+int str_empty_(const char *str) {
+    if (!str) {
+        return 1;
+    }
+
+    for (; !is_end_char_(*str); ++str) {
+        if (*str != ' ') {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/** 
+ * @brief Vrátí stream, se kterým bude kalkulačka pracovat.
+ * @param argc Počet parametrů z příkazové řádky.
+ * @param argv Pole řetězců příkazů z příkazové řádky.
+ * @return FILE* stdin pokud byl program spuštěn bez příkazu, jinak stream se zadaným souborem pokud se ho podařilo otevřít, jinak NULL
+*/
 FILE *init_stream(const int argc, char *argv[]) {
     FILE *stream = NULL;
 
@@ -34,16 +76,23 @@ FILE *init_stream(const int argc, char *argv[]) {
     return stream;
 }
 
+/** 
+ * @brief Načte řádek ze streamu a uloží ho jako řetězec do vektoru.
+ * @param stream Stream, ze kterého čteme.
+ * @param dest Ukazatel na vektor.
+ * @return int 1 jestli se podařilo řádek načíst, jinak 0
+*/
 int load_line(FILE *stream, vector_type *dest) {
     int c_int;
     char c = 0;
+
     if (!stream || !dest || !vector_isempty(dest)) {
         return 0;
     }
 
     while ((c_int = getc(stream)) != EOF) {
         c = (char)c_int;
-        if (c == '\n' || c == '\r') {
+        if (is_end_char_(c)) {
             c = 0;
         }
         if (!vector_push_back(dest, &c)) {
@@ -64,6 +113,10 @@ int load_line(FILE *stream, vector_type *dest) {
     return 1;
 }
 
+/** 
+ * @brief Vypíše číselnou soustavu, která je právě zvolená pro výpis výsledků.
+ * @param out Aktuální číselná soustava.
+*/
 void print_out(const enum bases out) {
     switch (out) {
         case bin: printf("bin\n"); break;
@@ -73,21 +126,13 @@ void print_out(const enum bases out) {
     }
 }
 
-int str_empty(const char *str) {
-    if (!str) {
-        return 1;
-    }
-
-    for (; !is_end_char_(*str); ++str) {
-        if (*str != ' ') {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-int evaluate_expression(const char *input, enum bases *out) {
+/** 
+ * @brief Vyhodnotí zadaný matematický výraz.
+ * @param input Řetězec s výrazem.
+ * @param out Aktuální číselná soustava.
+ * @return int s hodnotou některého z maker pro úspěšnost výsledku (viz shunting_yard.h)
+*/
+int evaluate_expression(const char *input, const enum bases *out) {
     int evaluation_res = EVALUATION_FAILURE;
     vector_type *rpn_str = NULL;
     stack_type *values = NULL;
@@ -126,6 +171,11 @@ int evaluate_expression(const char *input, enum bases *out) {
     return evaluation_res;
 }
 
+/** 
+ * @brief Vyhodnotí zadaný příkaz.
+ * @param input Řetězec s výrazem.
+ * @param out Aktuální číselná soustava.
+*/
 int evaluate_command(const char *input, enum bases *out) {
     if (!out) {
         return EVALUATION_FAILURE;
@@ -138,7 +188,7 @@ int evaluate_command(const char *input, enum bases *out) {
             return EVALUATION_SUCCESS; \
         }
 
-    if (str_empty(input)) {
+    if (str_empty_(input)) {
         return EVALUATION_SUCCESS;
     }
     if (strcmp(input, "quit") == 0) {
@@ -158,6 +208,12 @@ int evaluate_command(const char *input, enum bases *out) {
     #undef SET_OUT_IF
 }
 
+/** 
+ * @brief Spouštěcí funkce programu.
+ * @param argc Počet parametrů z příkazové řádky.
+ * @param argv Pole řetězců příkazů z příkazové řádky.
+ * @return EXIT_SUCCESS pokud byl program ukončen úspěšně, EXIT_FAILURE pokud ne
+*/
 int main(int argc, char *argv[]) {
     int exit = EXIT_SUCCESS;
     char *input = NULL;
@@ -178,20 +234,21 @@ int main(int argc, char *argv[]) {
         printf("> ");
 
         FAIL_IF_NOT(load_line(stream, input_vector));
-        FAIL_IF_NOT(input = (char *)vector_at(input_vector, 0));
 
         if (vector_isempty(input_vector)) {
             break;
         }
 
+        FAIL_IF_NOT(input = (char *)vector_at(input_vector, 0));
+        FAIL_IF_NOT(input = (char *)vector_giveup(input_vector));
+
         if (stream != stdin) {
             printf("%s\n", input);
         }
+
         if (evaluate_command(input, &out) == QUIT_CODE) {
             break;
         }
-
-        FAIL_IF_NOT(vector_clear(input_vector));
 
         if (feof(stream)) {
             break;

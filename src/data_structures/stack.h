@@ -1,13 +1,13 @@
 /**
  * @file stack_type.h
- * @author František Pártl (fpartl@kiv.zcu.cz)
+ * @authors František Pártl (fpartl@kiv.zcu.cz), Hynek Moudrý (hmoudry@students.zcu.cz)
  * @brief Hlavičkový soubor s deklaracemi funkcí pracujících se zásobníkovou strukturou.
  * @version 1.0
- * @date 2020-09-08
+ * @date 2023-01-04
  */
 
-#ifndef STACK_H
-#define STACK_H
+#ifndef _STACK_H
+#define _STACK_H
 
 #include <stddef.h>
 
@@ -76,13 +76,13 @@ int stack_isempty(const stack_type *s);
 
 /**
  * @brief Funkce pro uvolnění prvků v zásobníku z paměti a jejich odstranění ze zásobníku.
- * @param ss Ukazatel na zásobník, který bude vyčištěn.
+ * @param s Ukazatel na zásobník, jehož data budou vymazána.
  */
 void stack_clear(stack_type *s);
 
 /**
  * @brief Funkce pro uvolnění zásobníkové struktury z paměti.
- * @param ss Ukazatel na ukazatel na zásobník, který bude uvolněn.
+ * @param s Ukazatel na ukazatel na zásobník, který bude uvolněn.
  */
 void stack_deallocate(stack_type **s);
 

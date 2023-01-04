@@ -1,5 +1,13 @@
-#ifndef MPT_BASE
-#define MPT_BASE
+/**
+ * @file multiple_precision_tzpe.h
+ * @author Hynek Moudrý (hmoudry@students.zcu.cz)
+ * @brief Hlavičkový soubor s deklaracemi funkcí pro práci s instancemi struktur typu 'mpt'.
+ * @version 1.0
+ * @date 2023-01-04
+ */
+
+#ifndef _MPT_BASE_H
+#define _MPT_BASE_H
 
 #define BITS_IN_BYTE 8
 #define BITS_IN_NIBBLE 4
@@ -24,11 +32,11 @@ size_t mpt_segment_count(const mpt *mpv);
 
 size_t mpt_bit_count(const mpt *mpv);
 
-int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set);
-
 char *mpt_get_segment_ptr(const mpt *mpv, const size_t index);
 
 char mpt_get_segment(const mpt *mpv, const size_t index);
+
+int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set);
 
 int mpt_get_bit(const mpt *mpv, const size_t bit);
 

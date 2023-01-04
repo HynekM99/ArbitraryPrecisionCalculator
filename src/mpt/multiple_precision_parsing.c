@@ -2,16 +2,35 @@
 #include <stdlib.h>
 #include "mpt.h"
 
+/**
+ * \brief Nastaví v instanci mpt 'most significant' bity na jedničku dokud nenarazí na již nastavený bit.
+ *        Používá se když parsujeme řetězec s binární nebo hexadecimální zápornou hodnotu, abychom doplnily
+ *        jedničky doplňkového kódu (např. 0b1101 -> 0b11111101).
+ * \param target Ukazatel na mpt.
+ * \return char 1 jestli se nastavení bitů podařilo
+ */
 static int fill_set_bits_(mpt *target) {
-    size_t i = mpt_bit_count(target) - 1;
-    for (; mpt_get_bit(target, i) == 0; --i) {
-        if (!mpt_set_bit_to(target, i, 1)) {
+    size_t i, bit_count;
+    if ((bit_count = mpt_bit_count(target)) == 0) {
+        return 0;
+    }
+    
+    for (i = 0; i < bit_count; ++i) {
+        if (mpt_get_bit(target, bit_count - i - 1) == 1) {
+            break;
+        }
+        if (!mpt_set_bit_to(target, bit_count - i - 1, 1)) {
             return 0;
         }
     }
     return 1;
 }
 
+/**
+ * \brief Převede znak na odpovídající binární hodnotu 1 nebo 0.
+ * \param c Znak na převedení.
+ * \return int 1 pokud je znak '1', 0 pokud je znak '0', jinak -1
+ */
 static int parse_bin_char_(const char c) {
     if (c == '0' || c == '1') {
         return c == '1';
@@ -19,6 +38,11 @@ static int parse_bin_char_(const char c) {
     return -1;
 }
 
+/**
+ * \brief Převede znak na odpovídající dekadickou hodnotu v intervalu <0,9>.
+ * \param c Znak na převedení.
+ * \return int s dekadickou hodnotou pokud znak odpovídá znaku s dekadickou hodnotou, jinak -1
+ */
 static int parse_dec_char_(const char c) {
     if (c >= '0' && c <= '9') {
         return c - '0';
@@ -26,6 +50,11 @@ static int parse_dec_char_(const char c) {
     return -1;
 }
 
+/**
+ * \brief Převede znak na odpovídající hexadecimální hodnotu v intervalu <0,f>.
+ * \param c Znak na převedení (jsou platné malé i velké znaky).
+ * \return int s hexadecimální hodnotou pokud znak odpovídá znaku s hexadecimální hodnotou, jinak -1
+ */
 static int parse_hex_char_(const char c) {
     if (c >= '0' && c <= '9') {
         return c - '0';
@@ -154,7 +183,7 @@ mpt *mpt_parse_str_hex(const char **str) {
 
     while (char_value >= 0) {
         mpv_char = mpt_allocate(char_value);
-        shifted = mpt_shift(new, 4, 1);
+        shifted = mpt_shift(new, BITS_IN_NIBBLE, 1);
         added = mpt_add(shifted, mpv_char);
         mpt_deallocate(&mpv_char);
         mpt_deallocate(&shifted);
