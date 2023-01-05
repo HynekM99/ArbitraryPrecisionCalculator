@@ -129,7 +129,7 @@ void print_out(const enum bases out) {
 /** 
  * @brief Vyhodnotí zadaný matematický výraz.
  * @param input Řetězec s výrazem.
- * @param out Aktuální číselná soustava.
+ * @param out Ukazatel na aktuální číselnou soustavu.
  * @return int s hodnotou některého z maker pro úspěšnost výsledku (viz shunting_yard.h)
 */
 int evaluate_expression(const char *input, const enum bases *out) {
@@ -174,7 +174,8 @@ int evaluate_expression(const char *input, const enum bases *out) {
 /** 
  * @brief Vyhodnotí zadaný příkaz.
  * @param input Řetězec s výrazem.
- * @param out Aktuální číselná soustava.
+ * @param out Ukazatel na aktuální číselnou soustavu.
+ * @return int s hodnotou některého z maker pro vyhodnocení příkazu (viz začátek main.c)
 */
 int evaluate_command(const char *input, enum bases *out) {
     if (!out) {
@@ -240,7 +241,6 @@ int main(int argc, char *argv[]) {
         }
 
         FAIL_IF_NOT(input = (char *)vector_at(input_vector, 0));
-        FAIL_IF_NOT(input = (char *)vector_giveup(input_vector));
 
         if (stream != stdin) {
             printf("%s\n", input);
@@ -249,6 +249,8 @@ int main(int argc, char *argv[]) {
         if (evaluate_command(input, &out) == QUIT_CODE) {
             break;
         }
+
+        FAIL_IF_NOT(vector_clear(input_vector));
 
         if (feof(stream)) {
             break;
