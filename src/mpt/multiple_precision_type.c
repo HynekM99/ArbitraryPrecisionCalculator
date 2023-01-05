@@ -1,15 +1,15 @@
 #include <stdlib.h>
 #include "multiple_precision_type.h"
 
-static int mpt_add_segments_(mpt *mpv, const size_t segments_to_add) {
+static int mpt_add_segments_(mpt *value, const size_t segments_to_add) {
     size_t i, def = 0;
 
-    if (!mpv || segments_to_add == 0) {
+    if (!value || segments_to_add == 0) {
         return 0;
     }
 
     for (i = 0; i < segments_to_add; ++i) {
-        if (!vector_push_back(mpv->list, &def)) {
+        if (!vector_push_back(value->list, &def)) {
             return 0;
         }
     }
@@ -17,31 +17,31 @@ static int mpt_add_segments_(mpt *mpv, const size_t segments_to_add) {
     return 1;
 }
 
-static size_t mpt_get_segment_index_(const mpt *mpv, const size_t bit) {
-    return bit / mpt_bits_in_segment(mpv);
+static size_t mpt_get_segment_index_(const mpt *value, const size_t at) {
+    return at / mpt_bits_in_segment(value);
 }
 
-static size_t mpt_bit_pos_in_segment_(const mpt *mpv, const size_t bit) {
-    return bit % mpt_bits_in_segment(mpv);
+static size_t mpt_bit_pos_in_segment_(const mpt *value, const size_t at) {
+    return at % mpt_bits_in_segment(value);
 }
 
-static int mpt_init_(mpt *mpv, const char init_value) {
+static int mpt_init_(mpt *value, const char init_value) {
     char *default_segment;
     
-    if (!mpv) {
+    if (!value) {
         return 0;
     }
 
-    vector_deallocate(&mpv->list);
-    if (!(mpv->list = vector_allocate(sizeof(char), NULL))) {
+    vector_deallocate(&value->list);
+    if (!(value->list = vector_allocate(sizeof(char), NULL))) {
         return 0;
     }
 
-    if (!mpt_add_segments_(mpv, 1)) {
+    if (!mpt_add_segments_(value, 1)) {
         return 0;
     }
     
-    if (!(default_segment = mpt_get_segment_ptr(mpv, 0))) {
+    if (!(default_segment = mpt_get_segment_ptr(value, 0))) {
         return 0;
     }
     *default_segment = init_value;
@@ -91,49 +91,48 @@ void mpt_replace(mpt **to_replace, mpt **replace_with) {
     *replace_with = NULL;
 }
 
-size_t mpt_bits_in_segment(const mpt *mpv) {
-    return mpv ? mpv->list->item_size * BITS_IN_BYTE : 0;
+size_t mpt_bits_in_segment(const mpt *value) {
+    return value ? value->list->item_size * BITS_IN_BYTE : 0;
 }
 
-size_t mpt_segment_count(const mpt *mpv) {
-    return mpv ? vector_count(mpv->list) : 0;
+size_t mpt_segment_count(const mpt *value) {
+    return value ? vector_count(value->list) : 0;
 }
 
-size_t mpt_bit_count(const mpt *mpv) {
-    return mpt_segment_count(mpv) * mpt_bits_in_segment(mpv);
+size_t mpt_bit_count(const mpt *value) {
+    return mpt_segment_count(value) * mpt_bits_in_segment(value);
 }
 
-char *mpt_get_segment_ptr(const mpt *mpv, const size_t index) {
-    return mpv ? (char *)vector_at(mpv->list, index) : NULL;
+char *mpt_get_segment_ptr(const mpt *value, const size_t at) {
+    return value ? (char *)vector_at(value->list, at) : NULL;
 }
 
-char mpt_get_segment(const mpt *mpv, const size_t index) {
-    if (index >= vector_count(mpv->list)) {
-        return mpt_get_msb(mpv) * 0xff;
+char mpt_get_segment(const mpt *value, const size_t at) {
+    if (at >= mpt_segment_count(value)) {
+        return mpt_get_msb(value) * ~0;
     }
 
-    return *mpt_get_segment_ptr(mpv, index);
+    return *mpt_get_segment_ptr(value, at);
 }
 
-int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set) {
+int mpt_set_bit_to(mpt *value, const size_t at, const int bit_set) {
     size_t segment_pos, bit_pos, to_add;
     char *segment;
-
-    if (!mpv) {
+    if (!value) {
         return 0;
     }
 
-    segment_pos = mpt_get_segment_index_(mpv, bit);
-    bit_pos = mpt_bit_pos_in_segment_(mpv, bit);
+    segment_pos = mpt_get_segment_index_(value, at);
+    bit_pos = mpt_bit_pos_in_segment_(value, at);
 
-    if (segment_pos >= vector_count(mpv->list)) {
-        to_add = segment_pos - vector_count(mpv->list) + 1;
-        if (!mpt_add_segments_(mpv, to_add)) {
+    if (segment_pos >= mpt_segment_count(value)) {
+        to_add = segment_pos - mpt_segment_count(value) + 1;
+        if (!mpt_add_segments_(value, to_add)) {
             return 0;
         }
     }
 
-    segment = mpt_get_segment_ptr(mpv, segment_pos);
+    segment = mpt_get_segment_ptr(value, segment_pos);
 
     if (!segment) {
         return 0;
@@ -148,46 +147,32 @@ int mpt_set_bit_to(mpt *mpv, const size_t bit, const int bit_set) {
     return 1;
 }
 
-int mpt_get_bit(const mpt *mpv, const size_t bit) {
+int mpt_get_bit(const mpt *value, const size_t at) {
     char *segment;
     size_t bit_pos;
 
-    if (bit >= mpt_bit_count(mpv)) {
-        return mpt_get_msb(mpv);
+    if (at >= mpt_bit_count(value)) {
+        return mpt_get_msb(value);
     }
-    segment = mpt_get_segment_ptr(mpv, mpt_get_segment_index_(mpv, bit));
-    bit_pos = mpt_bit_pos_in_segment_(mpv, bit);
+    segment = mpt_get_segment_ptr(value, mpt_get_segment_index_(value, at));
+    bit_pos = mpt_bit_pos_in_segment_(value, at);
 
     return (*segment >> bit_pos) & 1;
 }
 
-int mpt_get_msb(const mpt *mpv) {
-    return mpt_get_bit(mpv, mpt_bit_count(mpv) - 1);
+int mpt_get_msb(const mpt *value) {
+    return mpt_get_bit(value, mpt_bit_count(value) - 1);
 }
 
-size_t mpt_get_mssb_pos(const mpt *mpv) {
-    size_t i, bit_pos, bit_count;
-    bit_count = mpt_bit_count(mpv);
-
-    for (i = 0; i < bit_count; ++i) {
-        bit_pos = bit_count - i - 1;
-        if (mpt_get_bit(mpv, bit_pos)) {
-            return bit_pos;
-        }
-    }
-
-    return ~0;
-}
-
-int mpt_is_zero(const mpt *mpv) {
+int mpt_is_zero(const mpt *value) {
     char *segment = NULL;
     size_t i;
-    if (!mpv) {
+    if (!value) {
         return 0;
     }
 
-    for (i = 0; i < vector_count(mpv->list); ++i) {
-        segment = mpt_get_segment_ptr(mpv, i);
+    for (i = 0; i < mpt_segment_count(value); ++i) {
+        segment = mpt_get_segment_ptr(value, i);
         if (!segment || *segment != 0) {
             return 0;
         }
@@ -196,12 +181,12 @@ int mpt_is_zero(const mpt *mpv) {
     return 1;
 }
 
-int mpt_is_negative(const mpt *mpv) {
-    return mpv ? mpt_get_msb(mpv) : 0;
+int mpt_is_negative(const mpt *value) {
+    return value ? mpt_get_msb(value) : 0;
 }
 
-int mpt_is_odd(const mpt *mpv) {
-    return mpv ? mpt_get_bit(mpv, 0) : 0;
+int mpt_is_odd(const mpt *value) {
+    return value ? mpt_get_bit(value, 0) : 0;
 }
 
 mpt *mpt_optimize(const mpt *orig) {
@@ -223,8 +208,8 @@ mpt *mpt_optimize(const mpt *orig) {
     msb = mpt_get_msb(orig);
     segments_to_remove = msb * 0xff;
 
-    for (i = 0; i < vector_count(orig->list); ++i) {
-        last_segment = vector_count(orig->list) - i - 1;
+    for (i = 0; i < mpt_segment_count(orig); ++i) {
+        last_segment = mpt_segment_count(orig) - i - 1;
         EXIT_IF(!(segment = mpt_get_segment_ptr(orig, last_segment)));
 
         if (*segment != segments_to_remove) {
@@ -232,8 +217,8 @@ mpt *mpt_optimize(const mpt *orig) {
         }
     }
 
-    /* Nechceme odstranit všechny segmenty */
-    if (i == vector_count(orig->list)) {
+    /* V případě samých nul, nebo samých jedniček nechceme odstranit všechny segmenty */
+    if (i == mpt_segment_count(orig)) {
         --i;
     }
 
@@ -241,23 +226,23 @@ mpt *mpt_optimize(const mpt *orig) {
 
     if (mpt_get_msb(new) != msb) {
         mpt_add_segments_(new, 1);
-        EXIT_IF(!(segment = mpt_get_segment_ptr(new, vector_count(new->list) - 1)));
+        EXIT_IF(!(segment = mpt_get_segment_ptr(new, mpt_segment_count(new) - 1)));
         *segment = segments_to_remove;
     }
 
-    EXIT_IF(!vector_realloc(new->list, vector_count(new->list)));
+    EXIT_IF(!vector_realloc(new->list, mpt_segment_count(new)));
 
     return new;
 
     #undef EXIT_IF
 }
 
-void mpt_deallocate(mpt **mpv) {
-    if (!mpv || !*mpv) {
+void mpt_deallocate(mpt **value) {
+    if (!value || !*value) {
         return;
     }
 
-    vector_deallocate(&((*mpv)->list));
-    free(*mpv);
-    *mpv = NULL;
+    vector_deallocate(&((*value)->list));
+    free(*value);
+    *value = NULL;
 }

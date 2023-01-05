@@ -12,8 +12,52 @@ static char addition_carry_(const unsigned char a, const unsigned char b, const 
     return (c < a) || (c == 255 && carry == 1);
 }
 
+/**
+ * @brief Statická funkce pro celočíselné umocnění základu exponentem. Volá se rekurzivně.
+ * @param base Ukazatel na instanci mpt se základem.
+ * @param exponent Ukazatel na instanci mpt s exponentem.
+ * @param one Ukazatel na pomocnou instanci mpt s hodnotou jedna.
+ * @param exponent Ukazatel na pomocnou instanci mpt s hodnotou dva.
+ * @return mpt* Ukazatel na novou instanci mpt s výsledkem celočíselného umocnění základu exponentem
+ */
+static mpt *mpt_pow_(const mpt *base, const mpt* exponent, const mpt *one, const mpt *two) {
+    mpt *new, *new_tmp, *div;
+    new = new_tmp = div = NULL;
+
+    if (!base || !exponent || !one || !two) {
+        return NULL;
+    }
+    if (mpt_is_negative(exponent)) {
+        return mpt_allocate(0);
+    }
+    if (mpt_is_zero(exponent)) {
+        return mpt_allocate(1);
+    }
+    if (mpt_compare(exponent, one) == 0) {
+        return mpt_clone(base);
+    }
+    if (mpt_compare(exponent, two) == 0) {
+        return mpt_mul(base, base);
+    }
+
+    new_tmp = mpt_pow_(base, two, one, two);
+    div = mpt_div(exponent, two);
+    new = mpt_pow_(new_tmp, div, one, two);
+    mpt_deallocate(&new_tmp);
+    
+    if (mpt_is_odd(exponent)) {
+        new_tmp = mpt_mul(new, base);
+        mpt_replace(&new, &new_tmp);
+    }
+
+    mpt_deallocate(&new_tmp);
+    mpt_deallocate(&div);
+
+    return new;
+}
+
 int mpt_compare(const mpt *a, const mpt *b) {
-    size_t mssb_pos_a, mssb_pos_b, i;
+    size_t bits_a, bits_b, i;
     int bit_a, bit_b;
 
     #define RETURN_IF(v, e) \
@@ -30,15 +74,29 @@ int mpt_compare(const mpt *a, const mpt *b) {
     RETURN_IF(mpt_signum(a) > mpt_signum(b), 1);
     RETURN_IF(mpt_signum(a) < mpt_signum(b), -1);
     
-    mssb_pos_a = mpt_get_mssb_pos(a);
-    mssb_pos_b = mpt_get_mssb_pos(b);
+    bits_a = mpt_bit_count(a);
+    bits_b = mpt_bit_count(b);
 
-    RETURN_IF(mssb_pos_a > mssb_pos_b, 1);
-    RETURN_IF(mssb_pos_a < mssb_pos_b, -1);
+    if (mpt_is_negative(a)) { /* a i b jsou záporná */
+        if (bits_a > bits_b) {
+            return -1;
+        }
+        if (bits_a < bits_b) {
+            return 1;
+        }
+    }
+    else { /* a i b jsou kladná */
+        if (bits_a > bits_b) {
+            return 1;
+        }
+        if (bits_a < bits_b) {
+            return -1;
+        }
+    }
 
-    for (i = 0; i < mssb_pos_a; ++i) {
-        bit_a = mpt_get_bit(a, mssb_pos_a - i - 1);
-        bit_b = mpt_get_bit(b, mssb_pos_a - i - 1);
+    for (i = 0; i < bits_a; ++i) {
+        bit_a = mpt_get_bit(a, bits_a - i - 1);
+        bit_b = mpt_get_bit(b, bits_a - i - 1);
         
         RETURN_IF(bit_a > bit_b, 1);
         RETURN_IF(bit_a < bit_b, -1);
@@ -334,42 +392,6 @@ mpt *mpt_mod(const mpt *dividend, const mpt *divisor) {
     mpt_deallocate(&mul);
 
     return res;
-}
-
-static mpt *mpt_pow_(const mpt *base, const mpt* exponent, const mpt *one, const mpt *two) {
-    mpt *new, *new_tmp, *div;
-    new = new_tmp = div = NULL;
-
-    if (!base || !exponent || !one || !two) {
-        return NULL;
-    }
-    if (mpt_is_negative(exponent)) {
-        return mpt_allocate(0);
-    }
-    if (mpt_is_zero(exponent)) {
-        return mpt_allocate(1);
-    }
-    if (mpt_compare(exponent, one) == 0) {
-        return mpt_clone(base);
-    }
-    if (mpt_compare(exponent, two) == 0) {
-        return mpt_mul(base, base);
-    }
-
-    new_tmp = mpt_pow_(base, two, one, two);
-    div = mpt_div(exponent, two);
-    new = mpt_pow_(new_tmp, div, one, two);
-    mpt_deallocate(&new_tmp);
-    
-    if (mpt_is_odd(exponent)) {
-        new_tmp = mpt_mul(new, base);
-        mpt_replace(&new, &new_tmp);
-    }
-
-    mpt_deallocate(&new_tmp);
-    mpt_deallocate(&div);
-
-    return new;
 }
 
 mpt *mpt_pow(const mpt *base, const mpt *exponent) {

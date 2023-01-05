@@ -1,9 +1,9 @@
 /**
- * \file main.c
- * \authors Hynek Moudrý (hmoudry@students.zcu.cz)
- * \brief Celočíselná kalkulačka s neomezenou přesností.
- * \version 1.0
- * \date 2023-01-04
+ * @file main.c
+ * @authors Hynek Moudrý (hmoudry@students.zcu.cz)
+ * @brief Celočíselná kalkulačka s neomezenou přesností.
+ * @version 1.0
+ * @date 2023-01-04
  */
 
 #include <stdio.h>

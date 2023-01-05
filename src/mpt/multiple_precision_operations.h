@@ -104,7 +104,7 @@ mpt *mpt_mod(const mpt *dividend, const mpt *divisor);
  * @brief Vrátí novou instanci mpt s výsledkem celočíselného umocnění základu exponentem.
  * @param base Ukazatel na instanci mpt se základem.
  * @param exponent Ukazatel na instanci mpt s exponentem.
- * @return mpt* Ukazatel na novou instanci mpt s výsledkem celočíselného umocnění základu
+ * @return mpt* Ukazatel na novou instanci mpt s výsledkem celočíselného umocnění základu exponentem
  */
 mpt *mpt_pow(const mpt *base, const mpt *exponent);
 

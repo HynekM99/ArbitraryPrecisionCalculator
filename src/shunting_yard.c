@@ -4,6 +4,9 @@
 #include "shunting_yard.h"
 #include "data_structures/conversion.h"
 
+/** Deklarace funkce shunt_char_. Je nutná, protože funkce shunt_char_ může zavolat funkci shunt_minus_, 
+ * která může opět zavolat shunt_char_ (při ošetřování speciálního případu n^-...). */
+
 static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack_type *operator_stack, vector_type *values_vector);
 
 /**
