@@ -1,15 +1,21 @@
 #include <stdlib.h>
 #include "multiple_precision_type.h"
 
+/**
+ * \brief Přidá zadaný počet nulových segmentů do instance mpt.
+ * \param value Ukazatel na instanci mpt.
+ * \param segments_to_add Počet segmentů k přidání.
+ * \return int 1 jestli se přidání podařilo, 0 pokud ne.
+ */
 static int mpt_add_segments_(mpt *value, const size_t segments_to_add) {
-    size_t i, def = 0;
+    size_t i, zero = 0;
 
     if (!value || segments_to_add == 0) {
         return 0;
     }
 
     for (i = 0; i < segments_to_add; ++i) {
-        if (!vector_push_back(value->list, &def)) {
+        if (!vector_push_back(value->list, &zero)) {
             return 0;
         }
     }
@@ -17,14 +23,33 @@ static int mpt_add_segments_(mpt *value, const size_t segments_to_add) {
     return 1;
 }
 
+/**
+ * \brief Vrátí index segmentu s bitem na at-té pozici.
+ * \param value Ukazatel na instanci mpt.
+ * \param at Pozice bitu, jehož segment chceme najít.
+ * \return size_t Index segmentu s bitem na at-té pozici.
+ */
 static size_t mpt_get_segment_index_(const mpt *value, const size_t at) {
     return at / mpt_bits_in_segment(value);
 }
 
+/**
+ * \brief Vrátí index bitu v segmentu s bitem na at-té pozici.
+ * \param value Ukazatel na instanci mpt.
+ * \param at Pozice bitu, jehož pozici v jemu příslušném segmentu chceme najít.
+ * \return size_t Index bitu v segmentu s bitem na at-té pozici.
+ */
 static size_t mpt_bit_pos_in_segment_(const mpt *value, const size_t at) {
     return at % mpt_bits_in_segment(value);
 }
 
+/**
+ * @brief Funkce provede inicializaci instance struktury mpt.
+ *        Instance bude mít jeden segment s hodnotou init_value.
+ * @param value Ukazatel na inicializovanou instanci struktury mpt.
+ * @param init_value Výchozí hodnota inicializované instance mpt.
+ * @return int 1, pokud inicializace proběhla v pořádku, jinak 0.
+ */
 static int mpt_init_(mpt *value, const char init_value) {
     char *default_segment;
     

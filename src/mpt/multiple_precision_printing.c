@@ -8,7 +8,7 @@
  *        funkce dokáže vrátit pouze nibbly ve spodní polovině bitů nejvyšší možné hodnoty mpt.
  * \param value Ukazatel na mpt.
  * \param nibble_pos Pozice nibblu.
- * \return char s hodnotou nibblu
+ * \return char s hodnotou nibblu.
  */
 static char mpt_get_nibble_(const mpt *value, const size_t nibble_pos) {
     char nibble = 0;
@@ -23,7 +23,9 @@ static char mpt_get_nibble_(const mpt *value, const size_t nibble_pos) {
 }
 
 /**
- * \brief Do konzole vypíše pozpátku řetězec uložený ve vektoru str.
+ * \brief Do konzole vypíše pozpátku řetězec uložený ve vektoru str. 
+ *        Používá se při vypisování hodnoty mpt v dekadické formě, 
+ *        protože algoritmus pro převod binární na dekadickou soustavu vypočítává jednotlivé číslice pozpátku. 
  * \param str Ukazatel na vektor s řetězcem, jenž má být vypsán pozpátku.
  */
 void str_print_reverse_(const vector_type *str) {

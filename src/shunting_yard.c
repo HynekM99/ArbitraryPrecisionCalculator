@@ -1,6 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "shunting_yard.h"
 #include "data_structures/conversion.h"
 
@@ -20,7 +17,7 @@ static void mpt_deallocate_wrapper_(void *poor) {
 /** 
  * \brief Zjistí, jestli je znak ukončující, tedy nulový nebo '\n'
  * \param c Znak.
- * \return int 1 jestli je znak ukončující, jinak 0
+ * \return int 1 jestli je znak ukončující, jinak 0.
  */
 static int is_end_char_(const char c) {
     return c == 0 || c == '\n';
@@ -29,7 +26,7 @@ static int is_end_char_(const char c) {
 /** 
  * \brief Zjistí, kolik je ve výrazu matematických operátorů.
  * \param str Řetězec s matematickým výrazem v infixové formě.
- * \return size_t počet operátorů ve výrazu, 1 pokud výraz nemá žádný operátor
+ * \return size_t počet operátorů ve výrazu, 1 pokud výraz nemá žádný operátor.
  */
 static size_t get_operator_count_(const char *str) {
     size_t i = 0;
@@ -46,7 +43,7 @@ static size_t get_operator_count_(const char *str) {
  * \param mpv Ukazatel na instanci mpt.
  * \param rpn_str Ukazatel na vektor, který obsahuje řetězec s RPN výrazem.
  * \param values_vector Ukazatel na vektor s ukazateli na instance mpt.
- * \return int 1 pokud se prvky přidaly, 0 pokud ne
+ * \return int 1 pokud se prvky přidaly, 0 pokud ne.
  */
 static int push_parsed_value_(const mpt *mpv, vector_type *rpn_str, vector_type *values_vector) {
     char value_symbol = RPN_VALUE_SYMBOL;
@@ -60,7 +57,7 @@ static int push_parsed_value_(const mpt *mpv, vector_type *rpn_str, vector_type 
  * \param operator Znak operátoru.
  * \param rpn_str Ukazatel na vektor s RPN výrazem.
  * \param operator_stack Ukazatel na zásobník operátorů.
- * \return int 1 pokud se podařilo prvek přidat, 0 pokud ne
+ * \return int 1 pokud se podařilo prvek přidat, 0 pokud ne.
  */
 static int push_operator_(const char operator, vector_type *rpn_str, stack_type *operator_stack) {
     char c = 0;
@@ -118,7 +115,7 @@ static int push_operator_(const char operator, vector_type *rpn_str, stack_type 
  * \param last_operator Ukazatel na znak posledního operátoru.
  * \param rpn_str Ukazatel na vektor, který obsahuje řetězec s RPN výrazem.
  * \param values_vector Ukazatel na vektor s ukazateli na instance mpt.
- * \return int 1 pokud se hodnota úspěšně převedla a přidala, 0 pokud ne
+ * \return int 1 pokud se hodnota úspěšně převedla a přidala, 0 pokud ne.
  */
 static int shunt_value_(const char **str, char *last_operator, vector_type *rpn_str, vector_type *values_vector) {
     mpt *parsed_value;
@@ -144,7 +141,7 @@ static int shunt_value_(const char **str, char *last_operator, vector_type *rpn_
  * \brief Zjistí, jestli může operátor c následovat za operátorem last_operator, podle infixové formy.
  * \param c Znak matematického operátoru, který má následovat za operátorem last_operator.
  * \param last_operator Znak matematického operátoru, který předchází operátoru last_operator.
- * \return int 1 pokud je syntax v pořádku, 0 pokud ne
+ * \return int 1 pokud je syntax v pořádku, 0 pokud ne.
  */
 static int infix_syntax_ok_(const char c, const char last_operator) {
     const func_oper_type *c_func, *last_func; 
@@ -175,7 +172,7 @@ static int infix_syntax_ok_(const char c, const char last_operator) {
 /** 
  * \brief Najde uzavírací závorku, která uzavírá matematický výraz.
  * \param str Řetězec s matematickým výrazem. První znak by měl být hned za otevírací závorkou.
- * \return char* Ukazatel na znak nalezené uzavírací závorky v řetězci, NULL pokud závorka neexistuje
+ * \return char* Ukazatel na znak nalezené uzavírací závorky v řetězci, NULL pokud závorka neexistuje.
  */
 static char *find_closing_bracket_(const char *str) {
     size_t l_brackets = 1, r_brackets = 0;
@@ -203,7 +200,7 @@ static char *find_closing_bracket_(const char *str) {
  * \param rpn_str Ukazatel na vektor, který obsahuje řetězec s RPN výrazem.
  * \param operator_stack Ukazatel na zásobník operátorů.
  * \param values_vector Ukazatel na vektor s ukazateli na instance mpt.
- * \return int s hodnotou některého z maker pro úspěšnost výsledku
+ * \return int s hodnotou některého z maker pro úspěšnost výsledku.
  */
 static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_str, stack_type *operator_stack, vector_type *values_vector) {
     int res;
@@ -271,7 +268,7 @@ static int shunt_minus_(const char **str, char *last_operator, vector_type *rpn_
  * \param rpn_str Ukazatel na vektor, který obsahuje řetězec s RPN výrazem.
  * \param operator_stack Ukazatel na zásobník operátorů.
  * \param values_vector Ukazatel na vektor s ukazateli na instance mpt.
- * \return int s hodnotou některého z maker pro úspěšnost výsledku
+ * \return int s hodnotou některého z maker pro úspěšnost výsledku.
  */
 static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack_type *operator_stack, vector_type *values_vector) {
     #define EXIT_IF(v, e) \
@@ -309,7 +306,7 @@ static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_s
  * \brief Zjistí, o jaký error se jedná při neúspěšné matematické operaci s jedním operandem.
  * \param operator Znak operátoru matematické operace s jedním operandem.
  * \param a Ukazatel na instanci operandu matematické operace.
- * \return int s hodnotou některého z maker pro matematický error
+ * \return int s hodnotou některého z maker pro matematický error.
  */
 static int get_math_error_un_func_(const char operator, const mpt *a) {
     if (!a) {
@@ -327,7 +324,7 @@ static int get_math_error_un_func_(const char operator, const mpt *a) {
  *        takže je vynechán, aby překladač nehlásil varování.
  * \param operator Znak operátoru matematické operace se dvěma operandy.
  * \param b Ukazatel na instanci operandu matematické operace.
- * \return int s hodnotou některého z maker pro matematický error
+ * \return int s hodnotou některého z maker pro matematický error.
  */
 static int get_math_error_bi_func_(const char operator, const mpt *b) {
     if ((operator == '/' || operator == '%') && mpt_is_zero(b)) {
@@ -342,7 +339,7 @@ static int get_math_error_bi_func_(const char operator, const mpt *b) {
  * @param rpn_values Ukazatel na zásobník, který obsahuje ukazatele na instance mpt s hodnotami v RPN výrazu.
  * @param values_stack Ukazatel na zásobník, který obsahuje ukazatele na instance mpt s hodnotami pro vyhodnocování RPN výrazu.
  *                     V průběhu vyhodnocování bude funkce v zásobníku hodnoty odstraňovat a přidávat.
- * @return int s hodnotou některého z maker pro úspěšnost výsledku
+ * @return int s hodnotou některého z maker pro úspěšnost výsledku.
  */
 static int evaluate_rpn_char_(const char c, stack_type *rpn_values, stack_type *values_stack) {
     int res = RESULT_OK;

@@ -3,11 +3,11 @@
 #include "mpt.h"
 
 /**
- * \brief Nastaví v instanci mpt 'most significant' bity na jedničku dokud nenarazí na již nastavený bit.
- *        Používá se když parsujeme řetězec s binární nebo hexadecimální zápornou hodnotu, abychom doplnily
- *        jedničky doplňkového kódu (např. 0b1101 -> 0b11111101).
- * \param target Ukazatel na mpt.
- * \return char 1 jestli se nastavení bitů podařilo
+ * \brief Nastavuje v instanci mpt 'most significant' bity na jedničku dokud nenarazí na již nastavený bit.
+ *        Používá se když parsujeme řetězec s binární nebo hexadecimální zápornou hodnotu, abychom doplnily 
+ *        jedničky doplňkového kódu v segmentech (např. "0b1101" -> 0b11111101).
+ * \param target Ukazatel na instanci mpt.
+ * \return char 1 jestli se nastavení bitů podařilo, 0 pokud ne.
  */
 static int fill_set_bits_(mpt *target) {
     size_t i, bit_count;
@@ -29,7 +29,7 @@ static int fill_set_bits_(mpt *target) {
 /**
  * \brief Převede znak na odpovídající binární hodnotu 1 nebo 0.
  * \param c Znak na převedení.
- * \return int 1 pokud je znak '1', 0 pokud je znak '0', jinak -1
+ * \return int 1 pokud je znak '1', 0 pokud je znak '0', jinak -1.
  */
 static int parse_bin_char_(const char c) {
     if (c == '0' || c == '1') {
@@ -41,7 +41,7 @@ static int parse_bin_char_(const char c) {
 /**
  * \brief Převede znak na odpovídající dekadickou hodnotu v intervalu <0,9>.
  * \param c Znak na převedení.
- * \return int s dekadickou hodnotou pokud znak odpovídá znaku s dekadickou hodnotou, jinak -1
+ * \return int s dekadickou hodnotou pokud znak odpovídá znaku s dekadickou hodnotou, jinak -1.
  */
 static int parse_dec_char_(const char c) {
     if (c >= '0' && c <= '9') {
@@ -53,7 +53,7 @@ static int parse_dec_char_(const char c) {
 /**
  * \brief Převede znak na odpovídající hexadecimální hodnotu v intervalu <0,f>.
  * \param c Znak na převedení (jsou platné malé i velké znaky).
- * \return int s hexadecimální hodnotou pokud znak odpovídá znaku s hexadecimální hodnotou, jinak -1
+ * \return int s hexadecimální hodnotou pokud znak odpovídá znaku s hexadecimální hodnotou, jinak -1.
  */
 static int parse_hex_char_(const char c) {
     if (c >= '0' && c <= '9') {

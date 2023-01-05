@@ -41,7 +41,7 @@
  *                Při neúspěšném shunting yardu bude rpn_str ukazovat na NULL.
  * @param rpn_values Ukazatel na ukazatel na zásobník, který bude bude vytvořen a bude obsahovat ukazatele na instance mpt s hodnotami pro RPN výraz.
  *                   Při neúspěšném shunting yardu bude rpn_values ukazovat na NULL.
- * @return int s hodnotou některého z maker pro úspěšnost výsledku
+ * @return int s hodnotou některého z maker pro úspěšnost výsledku.
  */
 int shunt(const char *str, vector_type **rpn_str, stack_type **rpn_values);
 
@@ -52,7 +52,7 @@ int shunt(const char *str, vector_type **rpn_str, stack_type **rpn_values);
  * @param rpn_str Ukazatel na vektor, který obsahuje řetězec s RPN výrazem.
  * @param rpn_values Ukazatel na zásobník, který obsahuje ukazatele na instance mpt s hodnotami pro RPN.
  *                   V průběhu vyhodnocování bude ze zásobníku hodnoty odstraňovat.
- * @return int s hodnotou některého z maker pro úspěšnost výsledku
+ * @return int s hodnotou některého z maker pro úspěšnost výsledku.
  */
 int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack_type *rpn_values);
 

@@ -39,6 +39,7 @@ typedef struct vector_type_ {
 /**
  * @brief Alokuje prázdný vektor s kapacitou VECTOR_INIT_SIZE.
  * @param item_size Velikost jednoho prvku vektoru.
+ * @param deallocator Ukazatel na dealokátor alokovaných prvků vektoru (emulace destruktoru).
  * @return vector_type* Ukazatel na alokovaný vektor.
  */
 vector_type *vector_allocate(const size_t item_size, const vec_it_dealloc_type deallocator);
@@ -47,10 +48,10 @@ vector_type *vector_allocate(const size_t item_size, const vec_it_dealloc_type d
  * @brief Funkce provede inicializaci instance struktury `vector_type`, která je dána ukazatelem `v`.
  *        Datový segment bufferu bude prealokován pro VECTOR_INIT_SIZE prvků o velikosti item_size.
  *
- * @param v Ukazatel na incializovanou instanci struktury `vector_type`.
+ * @param v Ukazatel na inicializovanou instanci struktury `vector_type`.
  * @param item_size Velikost jednoho prvku vektoru.
  * @param deallocator Ukazatel na dealokátor alokovaných prvků vektoru (emulace destruktoru).
- * @return int 1, pokud incializace proběhla v pořádku, jinak 0.
+ * @return int 1, pokud inicializace proběhla v pořádku, jinak 0.
  */
 int vector_init(vector_type *v, const size_t item_size, const vec_it_dealloc_type deallocator);
 

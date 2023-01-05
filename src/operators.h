@@ -31,7 +31,7 @@ typedef struct func_oper_type_ {
 /**
  * @brief Vrátí ukazatel na func_oper_type odpovídající požadovanému operátoru.
  * @param operator Znak operátoru.
- * @return Ukazatel na func_oper_type odpovídající požadovanému operátoru
+ * @return Ukazatel na func_oper_type odpovídající požadovanému operátoru.
  */
 const func_oper_type *get_func_operator(const char operator);
 

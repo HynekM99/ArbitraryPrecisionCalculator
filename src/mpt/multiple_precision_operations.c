@@ -5,20 +5,20 @@
  * \param a První hodnota pro sečtení.
  * \param b Druhá hodnota pro sečtení.
  * \param carry Předchozí carry.
- * \return char 1 jestli má být příznak carry nastaven, 0 pokud ne.
+ * \return uchar 1 jestli má být příznak carry nastaven, 0 pokud ne.
  */
-static char addition_carry_(const unsigned char a, const unsigned char b, const unsigned char carry) {
+static unsigned char addition_carry_(const unsigned char a, const unsigned char b, const unsigned char carry) {
     unsigned char c = a + b;
     return (c < a) || (c == 255 && carry == 1);
 }
 
 /**
- * @brief Statická funkce pro celočíselné umocnění základu exponentem. Volá se rekurzivně.
- * @param base Ukazatel na instanci mpt se základem.
- * @param exponent Ukazatel na instanci mpt s exponentem.
- * @param one Ukazatel na pomocnou instanci mpt s hodnotou jedna.
- * @param exponent Ukazatel na pomocnou instanci mpt s hodnotou dva.
- * @return mpt* Ukazatel na novou instanci mpt s výsledkem celočíselného umocnění základu exponentem
+ * \brief Statická funkce pro celočíselné umocnění základu exponentem. Může se volat rekurzivně.
+ * \param base Ukazatel na instanci mpt se základem.
+ * \param exponent Ukazatel na instanci mpt s exponentem.
+ * \param one Ukazatel na pomocnou instanci mpt s hodnotou jedna.
+ * \param two Ukazatel na pomocnou instanci mpt s hodnotou dva.
+ * \return mpt* Ukazatel na novou instanci mpt s výsledkem celočíselného umocnění základu exponentem.
  */
 static mpt *mpt_pow_(const mpt *base, const mpt* exponent, const mpt *one, const mpt *two) {
     mpt *new, *new_tmp, *div;
@@ -27,6 +27,7 @@ static mpt *mpt_pow_(const mpt *base, const mpt* exponent, const mpt *one, const
     if (!base || !exponent || !one || !two) {
         return NULL;
     }
+
     if (mpt_is_negative(exponent)) {
         return mpt_allocate(0);
     }

@@ -24,7 +24,7 @@ typedef mpt *(*str_parser)(const char **);
  * @brief Převádí znak na hodnotu odpovídající zadané číselné soustavě.
  * @param c Znak na převedení (v případě hexadecimální soustavy jsou platné malé i velké znaky).
  * @param base Požadovaná číselná soustava.
- * @return int s hodnotou, pokud se znak podařilo převést, jinak -1
+ * @return int s hodnotou, pokud se znak podařilo převést, jinak -1.
  */
 int parse_char(const char c, const enum bases base);
 

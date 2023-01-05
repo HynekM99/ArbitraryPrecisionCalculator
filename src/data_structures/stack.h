@@ -32,6 +32,7 @@ typedef struct stack_type_ {
  * @brief Funkce pro vytvoření nového zásobníku.
  * @param size Maximální počet položek zásobníku.
  * @param item_size Velikost jednoho prvku zásobníku.
+ * @param deallocator Ukazatel na dealokátor alokovaných prvků zásobníku (emulace destruktoru).
  * @return stack_type* Ukazatel na nově dynamicky alokovaný zásobník nebo NULL při chybě.
  */
 stack_type *stack_allocate(const size_t size, const size_t item_size, const stack_it_dealloc_type deallocator);
@@ -69,7 +70,7 @@ size_t stack_item_count(const stack_type *s);
 
 /**
  * @brief Říká, zda je zadaný zásobník prázdný nebo obsahuje nějaké prvky.
- * @param v Ukazatel na zásobník.
+ * @param s Ukazatel na zásobník.
  * @return int 1, pokud je zásobník prázdný, jinak 0.
  */
 int stack_isempty(const stack_type *s);

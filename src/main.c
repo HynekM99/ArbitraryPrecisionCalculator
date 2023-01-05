@@ -25,7 +25,7 @@
 /** 
  * \brief Zjistí, jestli je znak ukončující, tedy nulový nebo '\n'
  * \param c Znak.
- * \return int 1 jestli je znak ukončující, jinak 0
+ * \return int 1 jestli je znak ukončující, jinak 0.
 */
 static int is_end_char_(const char c) {
     return c == 0 || c == '\n';
@@ -34,7 +34,7 @@ static int is_end_char_(const char c) {
 /** 
  * \brief Zjistí, jestli je řetězec prázdný, tedy složený pouze z mezer.
  * \param str Řetězec.
- * \return int 1 jestli je řetězec prázdný, jinak 0
+ * \return int 1 jestli je řetězec prázdný, jinak 0.
 */
 int str_empty_(const char *str) {
     if (!str) {
@@ -54,7 +54,7 @@ int str_empty_(const char *str) {
  * @brief Vrátí stream, se kterým bude kalkulačka pracovat.
  * @param argc Počet parametrů z příkazové řádky.
  * @param argv Pole řetězců příkazů z příkazové řádky.
- * @return FILE* stdin pokud byl program spuštěn bez příkazu, jinak stream se zadaným souborem pokud se ho podařilo otevřít, jinak NULL
+ * @return FILE* stdin pokud byl program spuštěn bez příkazu, jinak stream se zadaným souborem pokud se ho podařilo otevřít, jinak NULL.
 */
 FILE *init_stream(const int argc, char *argv[]) {
     FILE *stream = NULL;
@@ -80,7 +80,7 @@ FILE *init_stream(const int argc, char *argv[]) {
  * @brief Načte řádek ze streamu a uloží ho jako řetězec do vektoru.
  * @param stream Stream, ze kterého čteme.
  * @param dest Ukazatel na vektor.
- * @return int 1 jestli se podařilo řádek načíst, jinak 0
+ * @return int 1 jestli se podařilo řádek načíst, jinak 0.
 */
 int load_line(FILE *stream, vector_type *dest) {
     int c_int;
@@ -130,7 +130,7 @@ void print_out(const enum bases out) {
  * @brief Vyhodnotí zadaný matematický výraz.
  * @param input Řetězec s výrazem.
  * @param out Ukazatel na aktuální číselnou soustavu.
- * @return int s hodnotou některého z maker pro úspěšnost výsledku (viz shunting_yard.h)
+ * @return int s hodnotou některého z maker pro úspěšnost výsledku (viz shunting_yard.h).
 */
 int evaluate_expression(const char *input, const enum bases *out) {
     int evaluation_res = EVALUATION_FAILURE;
@@ -175,7 +175,7 @@ int evaluate_expression(const char *input, const enum bases *out) {
  * @brief Vyhodnotí zadaný příkaz.
  * @param input Řetězec s výrazem.
  * @param out Ukazatel na aktuální číselnou soustavu.
- * @return int s hodnotou některého z maker pro vyhodnocení příkazu (viz začátek main.c)
+ * @return int s hodnotou některého z maker pro vyhodnocení příkazu (viz začátek main.c).
 */
 int evaluate_command(const char *input, enum bases *out) {
     if (!out) {
@@ -213,7 +213,7 @@ int evaluate_command(const char *input, enum bases *out) {
  * @brief Spouštěcí funkce programu.
  * @param argc Počet parametrů z příkazové řádky.
  * @param argv Pole řetězců příkazů z příkazové řádky.
- * @return EXIT_SUCCESS pokud byl program ukončen úspěšně, EXIT_FAILURE pokud ne
+ * @return EXIT_SUCCESS pokud byl program ukončen úspěšně, EXIT_FAILURE pokud ne.
 */
 int main(int argc, char *argv[]) {
     int exit = EXIT_SUCCESS;

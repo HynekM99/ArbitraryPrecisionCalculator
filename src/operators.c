@@ -11,7 +11,7 @@ const func_oper_type OPERATORS[] = {
     { '/', mpt_div, NULL, 3, left },
     { '%', mpt_mod, NULL, 2, left },
     { '+', mpt_add, NULL, 1, left },
-    { '-', mpt_sub, NULL, 1, left },
+    { '-', mpt_sub, NULL, 1, left }
 };
 const size_t OPERATORS_COUNT = sizeof(OPERATORS) / sizeof(*OPERATORS);
 
