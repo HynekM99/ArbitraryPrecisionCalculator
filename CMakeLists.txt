@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(main LANGUAGES C)
+project(calc LANGUAGES C)
 set(CMAKE_C_FLAGS "-Wall -Wextra -pedantic -ansi")
 
-add_executable(main 
-    src/main.c 
+add_executable(calc 
+    src/calc.c 
     
     src/data_structures/stack.c
     src/data_structures/vector.c

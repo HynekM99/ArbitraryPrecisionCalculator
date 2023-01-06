@@ -1,5 +1,5 @@
 /**
- * @file main.c
+ * @file calc.c
  * @authors Hynek Moudrý (hmoudry@students.zcu.cz)
  * @brief Celočíselná kalkulačka s neomezenou přesností.
  * @version 1.0
@@ -175,7 +175,7 @@ int evaluate_expression(const char *input, const enum bases *out) {
  * @brief Vyhodnotí zadaný příkaz.
  * @param input Řetězec s výrazem.
  * @param out Ukazatel na aktuální číselnou soustavu.
- * @return int s hodnotou některého z maker pro vyhodnocení příkazu (viz začátek main.c).
+ * @return int s hodnotou některého z maker pro vyhodnocení příkazu (viz začátek calc.c).
 */
 int evaluate_command(const char *input, enum bases *out) {
     if (!out) {
