@@ -64,12 +64,12 @@ FILE *init_stream(const int argc, char *argv[]) {
     }
 
     if (argc > 2) {
-        printf("Usage: %s <file.txt>", __FILE__);
+        printf("Usage: %s <file.txt>\n", __FILE__);
         return NULL;
     }
 
     if (!(stream = fopen(argv[1], "r"))) {
-        printf("Invalid input file!");
+        printf("Invalid input file!\n");
         return NULL;
     }
 
@@ -259,7 +259,9 @@ int main(int argc, char *argv[]) {
 
   clean_and_exit:
     vector_deallocate(&input_vector);
-    fclose(stream);
+    if (stream) {
+        fclose(stream);
+    }
 
     return exit;
 
