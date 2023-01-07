@@ -46,4 +46,4 @@ $(BUILD_DIR):
 	mkdir $@
 
 clean:
-	del /F /Q $(BUILD_DIR)/* $(BIN)
+	del /F /Q $(BUILD_DIR) $(BIN)
