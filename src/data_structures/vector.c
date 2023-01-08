@@ -116,7 +116,7 @@ vector_type *vector_clone(const vector_type *src) {
         return NULL;
     }
 
-    memcpy(dest->data, src->data, vector_count(src));
+    memcpy(dest->data, src->data, vector_count(src) * src->item_size);
     dest->count = src->count;
 
     return dest;
