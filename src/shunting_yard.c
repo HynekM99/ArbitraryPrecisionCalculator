@@ -286,7 +286,7 @@ static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_s
     }
     else if (**str >= '0' && **str <= '9') {
         EXIT_IF(!infix_syntax_ok_(RPN_VALUE_SYMBOL, *last_operator), SYNTAX_ERROR);
-        EXIT_IF(!shunt_value_(str, last_operator, rpn_str, values_vector), ERROR);
+        EXIT_IF(!shunt_value_(str, last_operator, rpn_str, values_vector), SYNTAX_ERROR);
     }
     else if (get_func_operator(**str) || **str == '(' || **str == ')') {
         EXIT_IF(!infix_syntax_ok_(**str, *last_operator), SYNTAX_ERROR);

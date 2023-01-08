@@ -414,8 +414,8 @@ mpt *mpt_pow(const mpt *base, const mpt *exponent) {
 }
 
 mpt *mpt_factorial(const mpt *value) {
-    mpt *new, *new_tmp, *sub, *sub_tmp, *one;
-    new = new_tmp = sub = sub_tmp = one = NULL;
+    mpt *new, *new_tmp, *add, *add_tmp, *one;
+    new = new_tmp = add = add_tmp = one = NULL;
     
     #define EXIT_IF(v) \
         if (v) { \
@@ -431,24 +431,24 @@ mpt *mpt_factorial(const mpt *value) {
     }
 
     EXIT_IF(!(one = mpt_allocate(1)));
-    EXIT_IF(!(new = mpt_clone(value)));
-    EXIT_IF(!(sub = mpt_sub(new, one)));
+    EXIT_IF(!(new = mpt_allocate(1)));
+    EXIT_IF(!(add = mpt_allocate(1)));
 
-    while (mpt_compare(sub, one) >= 1) {
-        new_tmp = mpt_mul(new, sub);
-        sub_tmp = mpt_sub(sub, one);
+    while (mpt_compare(add, value) <= 0) {
+        new_tmp = mpt_mul(new, add);
+        add_tmp = mpt_add(add, one);
 
         mpt_replace(&new, &new_tmp);
-        mpt_replace(&sub, &sub_tmp);
+        mpt_replace(&add, &add_tmp);
 
-        EXIT_IF(!new || !sub);
+        EXIT_IF(!new || !add);
     }
 
   clean_and_exit:
     mpt_deallocate(&new_tmp);
-    mpt_deallocate(&sub_tmp);
+    mpt_deallocate(&add_tmp);
     mpt_deallocate(&one);
-    mpt_deallocate(&sub);
+    mpt_deallocate(&add);
 
     return new;
 

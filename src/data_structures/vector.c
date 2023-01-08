@@ -21,7 +21,7 @@ static void *vector_at_(const vector_type *v, const size_t at) {
  * \param at Index prvku ve vektoru.
  */
 static void deallocate_at_(const vector_type *v, const size_t at) {
-    if (v && v->deallocator && at > vector_count(v) - 1) {
+    if (v && v->deallocator && at < vector_count(v)) {
         v->deallocator(vector_at_(v, at));
     }
 }

@@ -1,6 +1,6 @@
 CC = gcc
 
-CCFLAGS = -Wall -Wextra -pedantic -ansi
+CCFLAGS = -Wall -Wextra -pedantic -ansi -O3
 DATA_STRUCTURES_DIR = data_structures
 MPT_DIR = mpt
 BUILD_DIR = build
