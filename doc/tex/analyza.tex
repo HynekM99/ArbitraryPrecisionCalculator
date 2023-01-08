@@ -1,0 +1,46 @@
+\subsection{Reprezentace čísel}
+Důležitým problémem k vyřešení je způsob uložení neomezeně přesných celých čísel v paměti. Nejprve je nutné si uvědomit, že neomezeně velká čísla není prakticky možné v počítači ukládat. Pro naše účely se tedy omezíme na `extrémně velká' čísla, jejichž maximální, resp.~minimální velikost bude diskutována dále v sekci~\ref{subsection:mpt}. V jazyce C sám o sobě neexistuje datový typ, který by taková čísla dokázal ukládat (\verb|long long| má nejvyšší přesnost a ani zdaleka nám nevystačí) a je tedy nutné vymyslet strukturu schopnou tato čísla reprezentovat, nejlépe s co nejmenší paměťovou zátěží. 
+
+Čísla bychom mohli reprezentovat např.~polem jednobytových znaků '1' nebo '0', jednalo by se ale o velice neefektivní techniku, jejíž použití je v úplném zadání~\cite{bib:zadani} silně nedoporučeno. Mnohem lepší alternativa je použití bitového pole~\cite{bib:bit_array}. U obyčeného pole bychom ale v paměti alokovali statickou velikost, tím pádem by pole mohlo být buď zbytečně velké nebo moc malé. Namísto staticky alokovaného pole tedy použijeme pole dynamicky realokované (dále \textit{vektor}), což nám umožní alokovat paměť nejen dostatečně velkou, ale i minimální potřebnou, pro reprezentaci čísla.
+
+\subsection{Matematické operace}\label{subsection:operace}
+Nejdůležitější operací je sčítání, která je nutným základem pro další operace. Lze se inspirovat skutečným způsobem sčítání ve výpočetní technice, které se hardwarově řeší pomocí polovičních a úplných sčítaček, jenž lze jednoduše implementovat i softwarově pomocí odpovídajících logických operací. Museli bychom ale ke každému bitu přistupovat jednotlivě, což by mohlo být lehce zdlouhavé. Efektivnější by bylo využití aritmeticko-logické jednotky, aby tyto operace udělala za nás a sčítání tedy dělala byte po bytu s tím, že si pouze ohlídáme příznakový bit \verb|CARRY| mezi byty. 
+
+K výpočtu opačných čísel se nabízí dvojkový doplněk, tedy znegování všech bitů a přičtení jedničky. Tuto operaci pak lze jednoduše využít ve spojení se sčítáním pro zhotovení operace rozdílu.
+
+Násobení čísel $n\cdot{} m$ můžeme implementovat naivně ($n$-krát sečteme $m$, nebo naopak), pro velká čísla by ale takové řešení trvalo příliš dlouho. Využijeme místo toho techniku násobení, která se vyučuje na základních školách při násobení dvou dekadických čísel. Tento proces je v binární soustavě ještě jednodušší než v dekadické.
+\newpage
+
+Operaci celočíselného dělení lze také implementovat naivně (od dělence odečítáme dělitel dokud můžeme), znovu by se ale jednalo o nevhodné řešení, které má alternativu opět v technice dělení ze základních škol.
+
+Řešení pro výpočet zbytku po celočíselném dělení je zmíněn v zadání~\cite{bib:zadani}, implementujeme ho tedy stejně jako je implementován překladačemi jazyka ANSI~C:\@
+\begin{equation}
+    a\%m=a-m\left\lfloor\frac{a}{m}\right\rfloor
+\end{equation}
+
+Umocnění základu exponentem je další naivně implementovatelnou operací, pro vylepšení zde ale žádnou techniku ze základní školy nevyužijeme. Pro efektivnější výpočet mocniny v binární soustavě existuje velice jednoduchý a rychlý algoritmus~\cite{bib:power} popsaný dále v sekci~\ref{subsection:mpt_operace}.
+
+Poslední operací je faktoriál, který je neproblematičtější a pravděpodobně neexistuje jiné řešení, než postupné násobení $n!=n\cdot (n-1)\cdot (n-2)\cdot \dots{} \cdot 1$. Možná optimalizace by spočívala v uložení vypočítaného výsledku do paměti, v níž bychom již vypočítané výsledky hledali, tuto optimalizaci ale vynecháme.
+
+\subsection{Interpretace infixové formy}
+Infixová forma zápisu aritmetického výrazu (např. $4+2*3$) je pro vyhodnocení výsledku výrazu nevhodná. Operátory mají různé priority (precedence v tab.~\ref{tab:function}) a v infixové formě se tato priorita těžko zjišťuje. Tento problém se standardně řeší převodem infixové formy do formy tzv. `Reverzní Polské notace' (RPN)~\cite{bib:rpn}, v níž je priorita operátorů jednoznačně určená. Formu RPN lze z infixové formy získat pomocí algoritmu Shunting yard~\cite{bib:shunting_yard}.
+
+Shunting yard umí převést infixovou formu výrazu na formu RPN, nedokáže ale v infixové formě najít syntaktické chyby, a proto musíme kontrolu infixové syntaxe zařídit sami. Shunting yard zpracovává infixovou formu znak po znaku. Můžeme u každého znaku, reprezentující číslo nebo některý z operátorů (tab.~\ref{tab:function}), zjistit, zda-li se předchozí operátor nebo číslo může před aktuálním znakem vyskytovat. Povolené výskyty jsou popsány v tabulce~\ref{tab:infix_syntax}.
+
+\begin{table}[H]
+\centering
+\caption{Seznam povolených předchůdců operátoru nebo čísla}\label{tab:infix_syntax}
+\begin{tabular}{l|ccc|ccc}
+    \hline
+    \multicolumn{1}{c|}{\textbf{Operátor}} & \textbf{Binární}                  & \textbf{)}                 & \textbf{Unární, levá}                 & \textbf{Unární, pravá}                           & \textbf{(}                           & \textbf{Číslo}                          \\ \hline
+    \multirow{5}{*}{Povolení předchůdci}   & \multicolumn{3}{c|}{\multirow{5}{*}{\begin{tabular}[c]{@{}c@{}}Unární, levá\\ Číslo\\ )\end{tabular}}} & \multicolumn{3}{c}{\multirow{5}{*}{\begin{tabular}[c]{@{}c@{}}Unární, pravá\\ Binární\\ Číslo\\ (\\ Bez předchůdce\end{tabular}}} \\
+                                           & \multicolumn{3}{c|}{}                                                                                  & \multicolumn{3}{c}{}                                                                                                              \\
+                                           & \multicolumn{3}{c|}{}                                                                                  & \multicolumn{3}{c}{}                                                                                                              \\
+                                           & \multicolumn{3}{c|}{}                                                                                  & \multicolumn{3}{c}{}                                                                                                              \\
+                                           & \multicolumn{3}{c|}{}                                                                                  & \multicolumn{3}{c}{}                                                                                                              \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Načítání výrazů ze vstupu}
+Vzhledem k tomu, že výraz může být libovolně dlouhý, číst ze vstupu statické množství znaků by bylo nevhodné.
+Namísto toho můžeme využít struktury typu vektor k postupnému načítání všech znaků až po znak ukončovací (nulový nebo '\textbackslash n').

@@ -1,0 +1,60 @@
+\documentclass[a4paper, 12pt]{article}
+
+\usepackage[a4paper, inner=2cm, outer=2cm, top=2cm, bottom=2cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[IL2]{fontenc}
+\usepackage[czech]{babel}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{marginnote}
+\usepackage[numbers]{natbib}
+\usepackage{tocloft}
+\usepackage{hyperref}
+\usepackage{multirow}
+
+\renewcommand{\thealgorithm}{\arabic{section}.\arabic{algorithm}}
+\renewcommand{\bibsection}{\section*{Odkazy}}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+
+\bibpunct{\textcolor{blue}{[}}{\textcolor{blue}{]}}{,}{n}{}{;}
+\graphicspath{{./img/}}
+\hypersetup{
+    colorlinks=true,
+    citecolor=blue,
+    linkcolor=black,
+    urlcolor=blue
+}
+
+\begin{document}
+\begin{titlepage}
+    \input{title.tex}
+\end{titlepage}
+
+\setcounter{page}{1}
+\tableofcontents
+\newpage
+
+\section{Zadání}
+\input{zadani.tex}
+
+\section{Analýza úlohy}
+\input{analyza.tex}
+\newpage
+\section{Popis implementace}
+\input{implementace.tex}
+
+\section{Uživatelská příručka}
+\input{prirucka.tex}
+\newpage
+\section{Závěr}
+\input{zaver.tex}
+
+\input{literatura.tex}
+\addcontentsline{toc}{section}{Odkazy}
+
+\end{document}

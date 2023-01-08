@@ -1,0 +1,53 @@
+Naprogramujte v jazyce ANSI C konzolovou aplikaci, která bude fungovat jako jednoduchý interpret aritmetických výrazů zapsaných v infixové formě. Vstupem programu bude kromě řídících příkazů i seznam aritmetických výrazů obsahující celočíselné operandy ($\mathbb{Z}$) s neomezenou velikostí, zapsané ve dvojkové, desítkové či šestnáctkové číselné soustavě. Pro kódování operandů zapsaných ve dvojkové či šestnáctkové soustavě bude použit výhradně dvojkový doplňkový kód. Výstupem je pak odpovídající seznam výsledků vyhodnocení každého výrazu.
+
+Program bude spouštěn příkazem \verb|calc.exe [<vstupní-soubor>]|. \\Symbol \verb|<vstupní-soubor>| zastupuje nepovinný parametr – název vstupního souboru se seznamem aritmetických výrazů. Není-li symbol \verb|<vstupní-soubor>| uveden, program bude fungovat v interaktivním módu, kdy se příkazy budou provádět přímo zadáním z konzole do interpretu.
+
+\subsection{Specifikace vyhodnocovaných výrazů}\label{subsection:expressions}
+Výrazem může být pouze příkaz interpretu, nebo aritmetický výraz v infixové formě. Interpret
+je case-insensitive (tj.~nerozlišuje velká a malá písmena). 
+Minimální množina podporovaných příkazů: 
+\begin{itemize}
+    \item \verb|quit| \dots Ukončí interpret s návratovou hodnotou \verb|EXIT_SUCCESS|.
+    \item \verb|bin| \dots Výsledky výrazů budou vypisovány ve dvojkové soustavě (prefix \verb|0b|).
+    \item \verb|dec| \dots Výsledky výrazů budou vypisovány v desítkové soustavě (výchozí).
+    \item \verb|hex| \dots Výsledky výrazů budou vypisovány v šestnáctkové soustavě (prefix \verb|0x|).
+    \item \verb|out| \dots Vypíše aktuálně vybranou číselnou soustavu (\verb|bin|, \verb|dec| nebo \verb|hex|).
+\end{itemize}
+\begin{table}[h]
+    \caption{Minimální množina podporovaných funkcí a operátorů.}\label{tab:function}
+    \begin{tabular}{clcll}
+    \hline
+    \textbf{Operátor}  & \textbf{Operace}              & \textbf{Precedence} & \textbf{Arita} & \textbf{Asociativita} \\ \hline
+    !                  & Faktoriál                     & 4                   & unární         & levá                  \\
+    \textasciicircum{} & Umocnění                      & 4                   & binární        & pravá                 \\
+    -                  & Číslo opačné                  & 3                   & unární         & pravá                 \\
+    *                  & Násobení                      & 3                   & binární        &                       \\
+    /                  & Celočíselné dělení            & 3                   & binární        & levá                  \\
+    \%                 & Zbytek po celočíselném dělení & 2                   & binární        & levá                  \\
+    +                  & Součet                        & 1                   & binární        &                       \\
+    -                  & Rozdíl                        & 1                   & binární        & levá                  \\
+    (                  & Levá závorka                  & 0                   &                &                       \\ 
+    )                  & Pravá závorka                 & 0                   &                &                       \\ \hline
+    \end{tabular}
+\end{table}
+Celočíselné operandy mohou být ve zpracovávaných aritmetických výrazech zadány pomocí
+\begin{itemize}
+    \item dvojkové soustavy (prefix \verb|0b|),
+    \item desítkové soustavy (bez prefixu),
+    \item nebo šestnáctkové soustavy (prefix \verb|0x|). 
+\end{itemize}
+Pro kódování operandů bude použit výhradně dvojkový doplňkový kód, kde obecně platí:
+\begin{equation}\label{eq:twos_complement}
+\begin{aligned}
+    \verb|3|=\verb|0b000|\dots\verb|00011|=\mathbin{\color{red}{\verb|0b011|}}&\mathbin{\color{red}{\neq}}\mathbin{\color{red}{\verb|0b11|}}=\verb|0b111|\dots\verb|11111|=\verb|-1| \\
+    \verb|11|=\verb|0b0001011|=\verb|0x0000b|=\mathbin{\color{red}{\verb|0x0b|}}&\mathbin{\color{red}{\neq}}\mathbin{\color{red}{\verb|0xb|}}=\verb|0xffffb|=\verb|0b1011|=\verb|-5|
+\end{aligned}
+\end{equation}
+
+\subsection{Specifikace výstupu programu}\label{subsection:output}
+Program bude vždy vypisovat výsledek právě zadaného aritmetického výrazu či příkazu interpretu. Při načtení seznamu příkazů ze souboru musí výstup odpovídat přesně výstupu spuštění programu bez parametru (interaktivní režim).
+
+Při výpisu výsledků pomocí jejich binární či hexadecimální reprezentace je, stejně jako u vstupu, použit dvojkový doplňkový kód. Vypsán bude vždy minimální potřebný počet binárních či hexadecimálních cifer – zvýrazněná část nerovnosti~(\ref{eq:twos_complement}). 
+
+V případě chybného zadání příkazu či aritmetického výrazu vypíše interpret chybu dle tabulky
+1 v úplném zadání~\cite{bib:zadani} a pokračuje ve zpracování dalšího výrazu. 
