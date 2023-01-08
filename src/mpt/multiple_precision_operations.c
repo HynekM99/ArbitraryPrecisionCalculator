@@ -1,3 +1,4 @@
+#include <limits.h>
 #include "multiple_precision_operations.h"
 
 /**
@@ -9,7 +10,7 @@
  */
 static unsigned int addition_carry_(const unsigned int a, const unsigned int b, const unsigned int carry) {
     unsigned int c = a + b;
-    return (c < a) || (c == ~0 && carry == 1);
+    return (c < a) || (c == UINT_MAX && carry == 1);
 }
 
 /**

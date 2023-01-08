@@ -21,7 +21,7 @@ static void *vector_at_(const vector_type *v, const size_t at) {
  * \param at Index prvku ve vektoru.
  */
 static void deallocate_at_(const vector_type *v, const size_t at) {
-    if (v && v->deallocator && at < vector_count(v)) {
+    if (at < vector_count(v)) {
         v->deallocator(vector_at_(v, at));
     }
 }
@@ -72,8 +72,10 @@ void vector_deinit(vector_type *v) {
         return;
     }
 
-    for (i = 0; i < vector_count(v); ++i) {
-        deallocate_at_(v, i);
+    if (v->deallocator) {
+        for (i = 0; i < vector_count(v); ++i) {
+            deallocate_at_(v, i);
+        }
     }
 
     if (v->data) {
@@ -175,10 +177,11 @@ int vector_remove(vector_type *v, size_t count) {
         return vector_clear(v);
     }
 
-    for (i = 0; i < count; ++i) {
-        deallocate_at_(v, vector_count(v) - i - 1);
+    if (v->deallocator) {
+        for (i = 0; i < count; ++i) {
+            deallocate_at_(v, vector_count(v) - i - 1);
+        }
     }
-    
 
     v->count -= count;
     return 1;
