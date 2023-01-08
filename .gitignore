@@ -1,3 +1,10 @@
 /.vscode
 /build
 /zadani.pdf
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
