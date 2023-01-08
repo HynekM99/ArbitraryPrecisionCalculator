@@ -9,7 +9,7 @@
  * \param target Ukazatel na instanci mpt.
  * \return char 1 jestli se nastavení bitů podařilo, 0 pokud ne.
  */
-static int fill_set_bits_(mpt *target) {
+static int fill_set_bits_(mpt target) {
     size_t i, bit_count;
     if ((bit_count = mpt_bit_count(target)) == 0) {
         return 0;
@@ -81,20 +81,18 @@ int parse_char(const char c, const enum bases base) {
     return parser(c);
 }
 
-mpt *mpt_parse_str_bin(const char **str) {
+mpt mpt_parse_str_bin(const char **str) {
     int msb_set = 0, char_value = 0;
-    mpt *new, *shifted;
-    new = shifted = NULL;
+    mpt new, shifted;
 
     #define EXIT_IF(v) \
         if (v) { \
-            mpt_deallocate(&new); \
             goto clean_and_exit; \
         }
 
     EXIT_IF(!str || !*str);
     
-    EXIT_IF(!(new = mpt_allocate(0)));
+    EXIT_IF(!mpt_init(&new, 0));
 
     msb_set = **str == '1';
 
@@ -120,33 +118,29 @@ mpt *mpt_parse_str_bin(const char **str) {
     #undef EXIT_IF
 }
 
-mpt *mpt_parse_str_dec(const char **str) {
+mpt mpt_parse_str_dec(const char **str) {
     int char_value;
-    mpt *new, *mpv_char, *multiplied, *added, *ten;
-    new = mpv_char = multiplied = added = ten = NULL;
+    mpt new, mpv_char, multiplied, added, ten;
 
     #define EXIT_IF(v) \
         if (v) { \
-            mpt_deallocate(&new); \
             goto clean_and_exit; \
         }
 
     EXIT_IF(!str || !*str);
 
-    EXIT_IF(!(ten = mpt_allocate(10)));
-    EXIT_IF(!(new = mpt_allocate(0)));
+    EXIT_IF(!mpt_init(&ten, 10));
+    EXIT_IF(!mpt_init(&new, 0));
 
     EXIT_IF((char_value = parse_dec_char_(**str)) < 0);
 
     while (char_value >= 0) {
-        mpv_char = mpt_allocate(char_value);
+        mpt_init(&mpv_char, char_value);
         multiplied = mpt_mul(new, ten);
         added = mpt_add(multiplied, mpv_char);
         mpt_deallocate(&mpv_char);
         mpt_deallocate(&multiplied);
         mpt_replace(&new, &added);
-
-        EXIT_IF(!new);
 
         char_value = parse_dec_char_(*(++*str));
     }
@@ -162,10 +156,9 @@ mpt *mpt_parse_str_dec(const char **str) {
     #undef EXIT_IF
 }
 
-mpt *mpt_parse_str_hex(const char **str) {
+mpt mpt_parse_str_hex(const char **str) {
     int msb_set = 0, char_value;
-    mpt *new, *mpv_char, *shifted, *added;
-    new = mpv_char = shifted = added = NULL;
+    mpt new, mpv_char, shifted, added;
 
     #define EXIT_IF(v) \
         if (v) { \
@@ -175,21 +168,19 @@ mpt *mpt_parse_str_hex(const char **str) {
 
     EXIT_IF(!str || !*str);
 
-    EXIT_IF(!(new = mpt_allocate(0)));
+    EXIT_IF(!mpt_init(&new, 0));
 
     EXIT_IF((char_value = parse_hex_char_(**str)) < 0)
 
     msb_set = char_value >= 8;
 
     while (char_value >= 0) {
-        mpv_char = mpt_allocate(char_value);
+        mpt_init(&mpv_char, char_value);
         shifted = mpt_shift(new, BITS_IN_NIBBLE, 1);
         added = mpt_add(shifted, mpv_char);
         mpt_deallocate(&mpv_char);
         mpt_deallocate(&shifted);
         mpt_replace(&new, &added);
-
-        EXIT_IF(!new);
 
         char_value = parse_hex_char_(*(++*str));
     }
@@ -208,12 +199,8 @@ mpt *mpt_parse_str_hex(const char **str) {
     #undef EXIT_IF
 }
 
-mpt *mpt_parse_str(const char **str) {
+mpt mpt_parse_str(const char **str) {
     str_parser parser = NULL;
-
-    if (!str || !*str) {
-        return NULL;
-    }
 
     if (**str == '0' && *(*str + 1) == 'b') {
         parser = mpt_parse_str_bin;
@@ -227,5 +214,5 @@ mpt *mpt_parse_str(const char **str) {
         parser = mpt_parse_str_dec;
     }
 
-    return parser ? parser(str) : NULL;
+    return parser(str);
 }

@@ -54,6 +54,6 @@ int shunt(const char *str, vector_type **rpn_str, stack_type **rpn_values);
  *                   V průběhu vyhodnocování bude ze zásobníku hodnoty odstraňovat.
  * @return int s hodnotou některého z maker pro úspěšnost výsledku.
  */
-int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack_type *rpn_values);
+int evaluate_rpn(mpt *dest, const vector_type *rpn_str, stack_type *rpn_values);
 
 #endif

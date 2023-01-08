@@ -18,7 +18,7 @@ typedef int (*char_parser)(const char);
 /**
  * @brief Definice ukazatele na obecnou funkci, která převádí řetězec na instanci mpt.
  */
-typedef mpt *(*str_parser)(const char **);
+typedef mpt (*str_parser)(const char **);
 
 /**
  * @brief Převádí znak na hodnotu odpovídající zadané číselné soustavě.
@@ -36,7 +36,7 @@ int parse_char(const char c, const enum bases base);
  * @param str Ukazatel na ukazatel na řetězec.
  * @return mpt* Ukazatel na novou instanci mpt s převedenou hodnotou.
  */
-mpt *mpt_parse_str_bin(const char **str);
+mpt mpt_parse_str_bin(const char **str);
 
 /**
  * @brief Převádí řezězec reprezentující decimální hodnotu na instanci mpt s odpovídající hodnotou.
@@ -46,7 +46,7 @@ mpt *mpt_parse_str_bin(const char **str);
  * @param str Ukazatel na ukazatel na řetězec.
  * @return mpt* Ukazatel na novou instanci mpt s převedenou hodnotou.
  */
-mpt *mpt_parse_str_dec(const char **str);
+mpt mpt_parse_str_dec(const char **str);
 
 /**
  * @brief Převádí řezězec reprezentující hexadecimální hodnotu na instanci mpt s odpovídající hodnotou.
@@ -56,7 +56,7 @@ mpt *mpt_parse_str_dec(const char **str);
  * @param str Ukazatel na ukazatel na řetězec.
  * @return mpt* Ukazatel na novou instanci mpt s převedenou hodnotou.
  */
-mpt *mpt_parse_str_hex(const char **str);
+mpt mpt_parse_str_hex(const char **str);
 
 /**
  * @brief Převádí řezězec reprezentující binární, decimální, nebo hexadecimální hodnotu na instanci mpt s odpovídající hodnotou.
@@ -67,6 +67,6 @@ mpt *mpt_parse_str_hex(const char **str);
  * @param str Ukazatel na ukazatel na řetězec.
  * @return mpt* Ukazatel na novou instanci mpt s převedenou hodnotou.
  */
-mpt *mpt_parse_str(const char **str);
+mpt mpt_parse_str(const char **str);
 
 #endif

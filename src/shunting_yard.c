@@ -45,10 +45,9 @@ static size_t get_operator_count_(const char *str) {
  * \param values_vector Ukazatel na vektor s ukazateli na instance mpt.
  * \return int 1 pokud se prvky přidaly, 0 pokud ne.
  */
-static int push_parsed_value_(const mpt *mpv, vector_type *rpn_str, vector_type *values_vector) {
+static int push_parsed_value_(const mpt mpv, vector_type *rpn_str, vector_type *values_vector) {
     char value_symbol = RPN_VALUE_SYMBOL;
-    return mpv && 
-        vector_push_back(rpn_str, &value_symbol) && 
+    return vector_push_back(rpn_str, &value_symbol) && 
         vector_push_back(values_vector, &mpv);
 }
 
@@ -118,7 +117,7 @@ static int push_operator_(const char operator, vector_type *rpn_str, stack_type 
  * \return int 1 pokud se hodnota úspěšně převedla a přidala, 0 pokud ne.
  */
 static int shunt_value_(const char **str, char *last_operator, vector_type *rpn_str, vector_type *values_vector) {
-    mpt *parsed_value;
+    mpt parsed_value;
 
     if (!last_operator) {
         return 0;
@@ -308,10 +307,7 @@ static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_s
  * \param a Ukazatel na instanci operandu matematické operace.
  * \return int s hodnotou některého z maker pro matematický error.
  */
-static int get_math_error_un_func_(const char operator, const mpt *a) {
-    if (!a) {
-        return ERROR;
-    }
+static int get_math_error_un_func_(const char operator, const mpt a) {
     if (operator == '!' && mpt_is_negative(a)) {
         return FACTORIAL_OF_NEGATIVE;
     }
@@ -326,7 +322,7 @@ static int get_math_error_un_func_(const char operator, const mpt *a) {
  * \param b Ukazatel na instanci operandu matematické operace.
  * \return int s hodnotou některého z maker pro matematický error.
  */
-static int get_math_error_bi_func_(const char operator, const mpt *b) {
+static int get_math_error_bi_func_(const char operator, const mpt b) {
     if ((operator == '/' || operator == '%') && mpt_is_zero(b)) {
         return DIV_BY_ZERO;
     }
@@ -344,8 +340,7 @@ static int get_math_error_bi_func_(const char operator, const mpt *b) {
 static int evaluate_rpn_char_(const char c, stack_type *rpn_values, stack_type *values_stack) {
     int res = RESULT_OK;
     const func_oper_type *function = NULL;
-    mpt *a, *b, *result;
-    a = b = result = NULL;
+    mpt a, b, result;
 
     #define EXIT_IF(v, e) \
         if (v) { \
@@ -367,21 +362,21 @@ static int evaluate_rpn_char_(const char c, stack_type *rpn_values, stack_type *
 
     if (function->bi_handler) {
         EXIT_IF(!stack_pop(values_stack, &b) || !stack_pop(values_stack, &a), SYNTAX_ERROR);
-        EXIT_IF(!(result = function->bi_handler(a, b)), get_math_error_bi_func_(c, b));
+        result = function->bi_handler(a, b);
+        mpt_deallocate(&a);
+        mpt_deallocate(&b);
     }
     else if (function->un_handler) {
         EXIT_IF(!stack_pop(values_stack, &a), SYNTAX_ERROR);
-        EXIT_IF(!(result = function->un_handler(a)), get_math_error_un_func_(c, a));
+        result = function->un_handler(a);
+        mpt_deallocate(&a);
     }
     else {
         return ERROR;
     }
 
   clean_and_exit:
-    mpt_deallocate(&a);
-    mpt_deallocate(&b);
-
-    if (result && !stack_push(values_stack, &result)) {
+    if (!stack_push(values_stack, &result)) {
         return ERROR;
     }
     return res;
@@ -404,7 +399,7 @@ int shunt(const char *str, vector_type **rpn_str, stack_type **values) {
     EXIT_IF(!str || is_end_char_(*str) || !rpn_str || !values, ERROR);
 
     operator_stack = stack_allocate(get_operator_count_(str), sizeof(char), NULL);
-    values_vector = vector_allocate(sizeof(mpt *), mpt_deallocate_wrapper_);
+    values_vector = vector_allocate(sizeof(mpt), mpt_deallocate_wrapper_);
     *rpn_str = vector_allocate(sizeof(char), NULL);
 
     EXIT_IF(!operator_stack || !*rpn_str || !values_vector, ERROR);
@@ -434,7 +429,7 @@ int shunt(const char *str, vector_type **rpn_str, stack_type **values) {
     #undef EXIT_IF
 }
 
-int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack_type *values) {
+int evaluate_rpn(mpt *dest, const vector_type *rpn_str, stack_type *values) {
     int res = RESULT_OK;
     char *c;
     size_t i;

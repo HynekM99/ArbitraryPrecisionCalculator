@@ -136,7 +136,7 @@ int evaluate_expression(const char *input, const enum bases *out) {
     int evaluation_res = EVALUATION_FAILURE;
     vector_type *rpn_str = NULL;
     stack_type *values = NULL;
-    mpt *result = NULL;
+    mpt result;
     int res;
 
     switch (res = shunt(input, &rpn_str, &values)) {
