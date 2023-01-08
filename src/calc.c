@@ -64,12 +64,12 @@ FILE *init_stream(const int argc, char *argv[]) {
     }
 
     if (argc > 2) {
-        printf("Usage: %s <file.txt>\n", __FILE__);
+        printf("Usage: %s <file.txt>", __FILE__);
         return NULL;
     }
 
     if (!(stream = fopen(argv[1], "r"))) {
-        printf("Invalid input file!\n");
+        printf("Invalid input file!");
         return NULL;
     }
 
@@ -119,9 +119,9 @@ int load_line(FILE *stream, vector_type *dest) {
 */
 void print_out(const enum bases out) {
     switch (out) {
-        case bin: printf("bin\n"); break;
-        case dec: printf("dec\n"); break;
-        case hex: printf("hex\n"); break;
+        case bin: printf("bin"); break;
+        case dec: printf("dec"); break;
+        case hex: printf("hex"); break;
         default:  break;
     }
 }
@@ -140,9 +140,9 @@ int evaluate_expression(const char *input, const enum bases *out) {
     int res;
 
     switch (res = shunt(input, &rpn_str, &values)) {
-        case INVALID_SYMBOL: printf("Invalid command \"%s\"!\n", input); break;
-        case SYNTAX_ERROR:   printf("Syntax error!\n"); break;
-        case ERROR:          printf("Error while parsing!\n"); break;
+        case INVALID_SYMBOL: printf("Invalid command \"%s\"!", input); break;
+        case SYNTAX_ERROR:   printf("Syntax error!"); break;
+        case ERROR:          printf("Error while parsing!"); break;
         default: break;
     }
 
@@ -151,15 +151,14 @@ int evaluate_expression(const char *input, const enum bases *out) {
     }
 
     switch (res = evaluate_rpn(&result, rpn_str, values)) {
-        case SYNTAX_ERROR:          printf("Syntax error!\n"); break;
-        case MATH_ERROR:            printf("Math error!\n"); break;
-        case DIV_BY_ZERO:           printf("Division by zero!\n"); break;
-        case FACTORIAL_OF_NEGATIVE: printf("Input of factorial must not be negative!\n"); break;
-        case ERROR:                 printf("Error while evaluating!\n"); break;
+        case SYNTAX_ERROR:          printf("Syntax error!"); break;
+        case MATH_ERROR:            printf("Math error!"); break;
+        case DIV_BY_ZERO:           printf("Division by zero!"); break;
+        case FACTORIAL_OF_NEGATIVE: printf("Input of factorial must not be negative!"); break;
+        case ERROR:                 printf("Error while evaluating!"); break;
         default: 
             evaluation_res = EVALUATION_SUCCESS;
             mpt_print(result, *out);
-            printf("\n");
             break;
     }
 
@@ -216,7 +215,7 @@ int evaluate_command(const char *input, enum bases *out) {
  * @return EXIT_SUCCESS pokud byl program ukončen úspěšně, EXIT_FAILURE pokud ne.
 */
 int main(int argc, char *argv[]) {
-    int exit = EXIT_SUCCESS;
+    int c_int, exit = EXIT_SUCCESS;
     char *input = NULL;
     enum bases out = dec;
     vector_type *input_vector = NULL;
@@ -231,9 +230,7 @@ int main(int argc, char *argv[]) {
     FAIL_IF_NOT(input_vector = vector_allocate(sizeof(char), NULL));
     FAIL_IF_NOT(stream = init_stream(argc, argv));
 
-    for (;;) {
-        printf("> ");
-
+    for (printf("> ");;printf("\n> ")) {
         FAIL_IF_NOT(load_line(stream, input_vector));
 
         if (vector_isempty(input_vector)) {
@@ -252,9 +249,11 @@ int main(int argc, char *argv[]) {
 
         FAIL_IF_NOT(vector_clear(input_vector));
 
-        if (feof(stream)) {
+        
+        if ((c_int = getc(stream)) == EOF) {
             break;
         }
+        ungetc(c_int, stream);
     }
 
   clean_and_exit:
