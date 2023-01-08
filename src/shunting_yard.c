@@ -160,10 +160,7 @@ static int infix_syntax_ok_(const char c, const char last_operator) {
     if ((c == ')') || 
         (c_func && c_func->bi_handler) ||
         (c_func && c_func->un_handler && c_func->assoc == left)) {
-        if (!last_func) {
-            return last_operator == RPN_VALUE_SYMBOL || last_operator == ')';
-        }
-        return last_func->un_handler && last_func->assoc == left;
+        return last_operator == RPN_VALUE_SYMBOL || last_operator == ')';
     }
 
     return 0;
