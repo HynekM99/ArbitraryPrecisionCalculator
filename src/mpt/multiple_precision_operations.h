@@ -101,6 +101,15 @@ mpt *mpt_div(const mpt *dividend, const mpt *divisor);
 mpt *mpt_mod(const mpt *dividend, const mpt *divisor);
 
 /**
+ * @brief Vrátí novou instanci mpt se zbytkem po dělení zadaných hodnot instancí mpt.
+ * @param dividend Ukazatel na instanci mpt s dělencem.
+ * @param divisor Ukazatel na instanci mpt s delitelem.
+ * @param div_result Ukazatel na instanci mpt s již vypočítánou hodnotou celočíselného dělení dělence a dělitele.
+ * @return mpt* Ukazatel na novou instanci mpt se zbytkem po dělení zadaných hodnot instancí mpt.
+ */
+mpt *mpt_mod_with_div(const mpt *dividend, const mpt *divisor, const mpt *div_result);
+
+/**
  * @brief Vrátí novou instanci mpt s výsledkem celočíselného umocnění základu exponentem.
  * @param base Ukazatel na instanci mpt se základem.
  * @param exponent Ukazatel na instanci mpt s exponentem.

@@ -5,11 +5,11 @@
  * \param a První hodnota pro sečtení.
  * \param b Druhá hodnota pro sečtení.
  * \param carry Předchozí carry.
- * \return uchar 1 jestli má být příznak carry nastaven, 0 pokud ne.
+ * \return uint 1 jestli má být příznak carry nastaven, 0 pokud ne.
  */
-static unsigned char addition_carry_(const unsigned char a, const unsigned char b, const unsigned char carry) {
-    unsigned char c = a + b;
-    return (c < a) || (c == 255 && carry == 1);
+static unsigned int addition_carry_(const unsigned int a, const unsigned int b, const unsigned int carry) {
+    unsigned int c = a + b;
+    return (c < a) || (c == ~0 && carry == 1);
 }
 
 /**
@@ -111,16 +111,17 @@ mpt *mpt_abs(const mpt *value) {
 
 mpt *mpt_shift(const mpt *value, const size_t positions, const int shift_left) {
     size_t i, j;
-    mpt *new, *new_tmp;
-    new = new_tmp = NULL;
+    mpt *new;
+    new = NULL;
 
     #define EXIT_IF(v) \
         if (v) { \
+            mpt_deallocate(&new); \
             goto clean_and_exit; \
         }
 
     EXIT_IF(!value);
-    EXIT_IF(!(new_tmp = mpt_allocate(0)));
+    EXIT_IF(!(new = mpt_allocate(0)));
 
     if (shift_left) {
         i = 0;
@@ -131,16 +132,16 @@ mpt *mpt_shift(const mpt *value, const size_t positions, const int shift_left) {
     }
 
     for (; i < mpt_bit_count(value) + mpt_bits_in_segment(value); ++i, ++j) {
-        EXIT_IF(!mpt_set_bit_to(new_tmp, j, mpt_get_bit(value, i)));
+        EXIT_IF(!mpt_set_bit_to(new, j, mpt_get_bit(value, i)));
     }
 
-    EXIT_IF(!vector_remove(new_tmp->list, 1));
+    EXIT_IF(!vector_remove(new->list, 1));
 
-    new = mpt_optimize(new_tmp);
+    if (!mpt_optimize(new)) {
+        mpt_deallocate(&new);
+    }
 
   clean_and_exit:
-    mpt_deallocate(&new_tmp);
-
     return new;
 
     #undef EXIT_IF
@@ -148,7 +149,7 @@ mpt *mpt_shift(const mpt *value, const size_t positions, const int shift_left) {
 
 mpt *mpt_negate(const mpt *value) {
     size_t i;
-    char segment;
+    int segment;
     mpt *new_tmp, *new, *one;
     new_tmp = new = one = NULL;
 
@@ -181,19 +182,20 @@ mpt *mpt_negate(const mpt *value) {
 }
 
 mpt *mpt_add(const mpt *a, const mpt *b) {
-    unsigned char segment_a, segment_b, res = 0, carry = 0;
+    unsigned int segment_a, segment_b, res = 0, carry = 0;
     size_t i, segments;
-    mpt *new, *new_tmp;
-    new = new_tmp = NULL;
+    mpt *new;
+    new = NULL;
 
     #define EXIT_IF(v) \
         if (v) { \
+            mpt_deallocate(&new); \
             goto clean_and_exit; \
         }
         
     EXIT_IF(!a || !b);
 
-    EXIT_IF(!(new_tmp = mpt_allocate(0)));
+    EXIT_IF(!(new = mpt_allocate(0)));
 
     if (mpt_bit_count(a) >= mpt_bit_count(b)) {
         segments = vector_count(a->list);
@@ -201,7 +203,7 @@ mpt *mpt_add(const mpt *a, const mpt *b) {
         segments = vector_count(b->list);
     }
 
-    EXIT_IF(!vector_clear(new_tmp->list));
+    EXIT_IF(!vector_clear(new->list));
 
     for (i = 0; i < segments + 1; ++i) {
         segment_a = mpt_get_segment(a, i);
@@ -210,13 +212,14 @@ mpt *mpt_add(const mpt *a, const mpt *b) {
         res = segment_a + segment_b + carry;
         carry = addition_carry_(segment_a, segment_b, carry);
 
-        EXIT_IF(!vector_push_back(new_tmp->list, &res));
+        EXIT_IF(!vector_push_back(new->list, &res));
     }
 
-    new = mpt_optimize(new_tmp);
+    if (!mpt_optimize(new)) {
+        mpt_deallocate(&new);
+    }
 
   clean_and_exit:
-    mpt_deallocate(&new_tmp);
     return new;
 }
 
@@ -234,11 +237,12 @@ mpt *mpt_sub(const mpt *a, const mpt *b) {
 
 mpt *mpt_mul(const mpt *a, const mpt *b) {
     size_t i, max_bits, to_remove;
-    mpt *new, *new_tmp, *added, *shifted;
-    new = new_tmp = added = shifted = NULL;
+    mpt *new, *added, *shifted;
+    new = added = shifted = NULL;
 
     #define EXIT_IF(v) \
         if (v) { \
+            mpt_deallocate(&new); \
             goto clean_and_exit; \
         }
 
@@ -248,7 +252,7 @@ mpt *mpt_mul(const mpt *a, const mpt *b) {
         return mpt_allocate(0);
     }
 
-    EXIT_IF(!(new_tmp = mpt_allocate(0)));
+    EXIT_IF(!(new = mpt_allocate(0)));
 
     if (mpt_bit_count(a) >= mpt_bit_count(b)) {
         max_bits = mpt_bit_count(a);
@@ -262,22 +266,23 @@ mpt *mpt_mul(const mpt *a, const mpt *b) {
             continue;
         }
         shifted = mpt_shift(a, i, 1);
-        added = mpt_add(new_tmp, shifted);
+        added = mpt_add(new, shifted);
         mpt_deallocate(&shifted);
-        mpt_replace(&new_tmp, &added);
-        EXIT_IF(!new_tmp);
+        mpt_replace(&new, &added);
+        EXIT_IF(!new);
     }
 
-    if (mpt_bit_count(new_tmp) > max_bits) {
-        to_remove = (mpt_bit_count(new_tmp) - max_bits) / mpt_bits_in_segment(new_tmp);
-        EXIT_IF(!vector_remove(new_tmp->list, to_remove));
+    if (mpt_bit_count(new) > max_bits) {
+        to_remove = (mpt_bit_count(new) - max_bits) / mpt_bits_in_segment(new);
+        EXIT_IF(!vector_remove(new->list, to_remove));
     }
     
-    new = mpt_optimize(new_tmp);
+    if (!mpt_optimize(new)) {
+        mpt_deallocate(&new);
+    }
 
   clean_and_exit:
     mpt_deallocate(&shifted);
-    mpt_deallocate(&new_tmp);
     return new;
 
     #undef EXIT_IF
@@ -369,6 +374,18 @@ mpt *mpt_mod(const mpt *dividend, const mpt *divisor) {
     res = mpt_sub(dividend, mul);
 
     mpt_deallocate(&div);
+    mpt_deallocate(&mul);
+
+    return res;
+}
+
+mpt *mpt_mod_with_div(const mpt *dividend, const mpt *divisor, const mpt *div_result) {
+    mpt *res, *mul;
+    res = mul = NULL;
+
+    mul = mpt_mul(div_result, divisor);
+    res = mpt_sub(dividend, mul);
+
     mpt_deallocate(&mul);
 
     return res;

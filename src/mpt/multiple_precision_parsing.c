@@ -7,7 +7,7 @@
  *        Používá se když parsujeme řetězec s binární nebo hexadecimální zápornou hodnotu, abychom doplnily 
  *        jedničky doplňkového kódu v segmentech (např. "0b1101" -> 0b11111101).
  * \param target Ukazatel na instanci mpt.
- * \return char 1 jestli se nastavení bitů podařilo, 0 pokud ne.
+ * \return int 1 jestli se nastavení bitů podařilo, 0 pokud ne.
  */
 static int fill_set_bits_(mpt *target) {
     size_t i, bit_count;

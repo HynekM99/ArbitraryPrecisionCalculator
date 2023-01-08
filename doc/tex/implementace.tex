@@ -3,38 +3,27 @@ V programu jsou často využívány datové struktury zásobník (struktura \ver
 V průběhu programu bude také nutné převést data z vektoru do zásobníku. Funkce převedení je v souboru \verb|conversion.c/.h|. Vzhledem k tomu, že se jedná o běžné datové struktury, nebudeme je podrobně popisovat. Zmíněné soubory jsou umístěny samostatně ve složce \verb|data_structures|. 
 
 \subsection{Struktura pro reprezentaci čísel}\label{subsection:mpt}
-Struktura pro reprezentaci `nekonečně' velkých čísel (struktura \verb|mpt|, soubory \\ \verb|multiple_precision_type.c/.h|) je pouze obalovací strukturou pro vektor znaků (dále budeme tyto znaky označovat jako byty), jehož velikost se dynamicky realokuje podle potřeby.
+Struktura pro reprezentaci `nekonečně' velkých čísel (struktura \verb|mpt|, soubory \\ \verb|multiple_precision_type.c/.h|) je pouze obalovací strukturou pro vektor integerů (dále označovány jako segmenty), jehož velikost se dynamicky realokuje podle potřeby.
 
 Veškeré soubory týkající se struktury \verb|mpt| a práce s ní se nacházejí ve stejnojmenné složce \verb|mpt|.
 
-Při vytvoření instance \verb|mpt| (funkcí \verb|mpt_allocate|) do vektoru přidáme jediný byte se zadanou číselnou hodnotou v rozsahu \verb|signed byte|. Pro získání vyšších, resp.~nižších, čísel je zapotřebí přidat do vektoru další byty a v nich nastavit příslušné bity (funkce \verb|mpt_set_bit_to|). Každý $i$-tý prvek ve vektoru odpovídá $i$-tému bytu čísla. Nultý byte má váhu nejmenší a s každým dalším bytem se váha zvyšuje. Například pro číslo \verb|1093| = \verb|0b00000100 01000101| můžeme nejprve vytvořit \verb|mpt| s hodnotou \verb|69| = \verb|0b01000101| a následně nastavit desátý bit na jedničku (viz obr.~\ref{fig:mpt_byte_0} a~\ref{fig:mpt_byte_1}). Funkce \verb|mpt_set_bit_to| se sama stará o přidání chybějících bytů.
+Při vytvoření instance \verb|mpt| (funkcí \verb|mpt_allocate|) do vektoru přidáme jediný segment se zadanou číselnou hodnotou v rozsahu datového typu \verb|int|. Pro získání vyšších, resp.~nižších, čísel je zapotřebí přidat do vektoru další segmenty a v nich nastavit příslušné bity (funkce \verb|mpt_set_bit_to|). Každý $i$-tý prvek ve vektoru odpovídá $i$-tému segmentu čísla. Nultý segment má váhu nejmenší a s každým dalším segmentem se váha zvyšuje.
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics{mpt_byte_0.png}
-    \caption{Ukázka nultého bytu v paměti pro číslo 1093 (0b00000100 \textbf{01000101}).}\label{fig:mpt_byte_0}
-\end{figure}
-\begin{figure}[ht]
-    \centering
-    \includegraphics{mpt_byte_1.png}
-    \caption{Ukázka prvního bytu v paměti pro číslo 1093 (0b\textbf{00000100} 01000101)}\label{fig:mpt_byte_1}
-\end{figure}
-
-Je nutné počítat s tím, že čísla reprezentujeme dvojkovým doplňkem. \\Např.~číslo \verb|255 = 0b11111111| se sice vejde do jednoho bytu, ale ve dvojkovém doplňku je rovno \verb|-1|, a proto je nutné přidat navíc byte samých nul, aby hodnota odpovídala \verb|255|.
+Je nutné počítat s tím, že čísla reprezentujeme dvojkovým doplňkem. \\Např.~číslo $2^{32}$\verb| = |0b11\dots 11 se sice vejde do jednoho segmentu, ale ve dvojkovém doplňku je rovno \verb|-1|, a proto je nutné přidat navíc segment samých nul, aby hodnota odpovídala $2^{32}$.
 
 Vezmeme-li v potaz, že bity indexujeme v rozsahu \verb|size_t|, a budeme-li předpokládat, že program běží na 64-bitovém stroji, vidíme, že jedno číslo \verb|mpt| může mít až $2^{64}$ bitů a mít tedy hodnotu v rozsahu $\langle-2^{(2^{63})}, 2^{(2^{63})}-1\rangle$. Jedná se o čísla, která mají v dekadické soustavě přibližně $2,8\cdot{}10^{18}$ číslic. Nedokážeme tedy reprezentovat `nekonečně velká' čísla, na druhou stranu jsou tato čísla tak velká, že bychom na výsledky operací s nimi čekali příliš dlouho.
 
 \subsection{Matematické operace s MPT}\label{subsection:mpt_operace}
 Funkce pro matematické operace s instancemi \verb|mpt| se nachází v souborech \\\verb|multiple_precision_operations.c/.h|.
 
-U všech operací je výsledná hodnota vrácena odpovídající funkcí jako ukazatel na novou instanci \verb|mpt|, nebo NULL když nastane chyba nebo nelze operaci provést se zadanými hodnotami. Vstupní operandy zůstávají nezměněné. Na konci každé operace by měla výsledná hodnota vždy být optimalizovaná funkcí \verb|mpt_optimize| tak, aby měla co nejmenší počet bytů. 
+U všech operací je výsledná hodnota vrácena odpovídající funkcí jako ukazatel na novou instanci \verb|mpt|, nebo NULL když nastane chyba nebo nelze operaci provést se zadanými hodnotami. Vstupní operandy zůstávají nezměněné. Na konci každé operace by měla výsledná hodnota vždy být optimalizovaná funkcí \verb|mpt_optimize| tak, aby měla co nejmenší počet segmentů. 
 
 Pro některé operace bylo zapotřebí vytvořit navíc operace absolutní hodnoty (funkce \\ \verb|mpt_abs|) a bitového posunu (funkce \verb|mpt_shift|).
 
-Sčítání provádíme po bytech a stav příznakového bitu \verb|CARRY| zjišťujeme funkcí \\\verb|addition_carry_|. Při sčítání musíme pro obecnou správnost výpočtu sečíst tolik bytů, kolik má operand s nejvíce byty a poté ještě jeden byte navíc, kdyby došlo k nastavení MSB.
+Sčítání provádíme po segmentech a stav příznakového bitu \verb|CARRY| zjišťujeme funkcí \\\verb|addition_carry_|. Při sčítání musíme pro obecnou správnost výpočtu sečíst tolik segmentů, kolik má operand s nejvíce segmenty a poté ještě jeden segment navíc, kdyby došlo k nastavení MSB.
 
 Základní princip implementovaného násobení je ilustrován na obrázku~\ref{fig:binary_multiplication}.
-Násobení ve skutečnosti provádíme vždy nad dvojnásobkem bytů operandu s nejvíce byty, aby byly výsledky správné i pro záporná čísla.
+Násobení ve skutečnosti provádíme vždy nad dvojnásobkem segmentů operandu s nejvíce segmenty, aby byly výsledky správné i pro záporná čísla.
 
 \begin{figure}[ht]
     \centering

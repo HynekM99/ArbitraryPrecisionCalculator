@@ -30,10 +30,10 @@ typedef struct mpt_ {
 
 /**
  * @brief Alokuje novou instanci mpt se zadanou hodnotou.
- * @param init_value Počáteční hodnota v rozsahu <-128, 127>.
+ * @param init_value Počáteční hodnota.
  * @return mpt* Ukazatel na vytvořenou instanci mpt.
  */
-mpt *mpt_allocate(const char init_value);
+mpt *mpt_allocate(const int init_value);
 
 /**
  * @brief Alokuje novou instanci mpt se stejnou hodnotou jako má zadaná instance mpt.
@@ -75,17 +75,17 @@ size_t mpt_bit_count(const mpt *value);
  * @brief Vrátí ukazatel na at-tý segment v instanci mpt.
  * @param value Instance mpt.
  * @param at Index segmentu.
- * @return char* Ukazatel na at-tý segment v instanci mpt, NULL pokud je at mimo rozsah.
+ * @return int* Ukazatel na at-tý segment v instanci mpt, NULL pokud je at mimo rozsah.
  */
-char *mpt_get_segment_ptr(const mpt *value, const size_t at);
+int *mpt_get_segment_ptr(const mpt *value, const size_t at);
 
 /**
  * @brief Vrátí at-tý segment v instanci mpt.
  * @param value Instance mpt.
  * @param at Index segmentu.
- * @return char At-tý segment v instanci mpt. Pokud je at mimo rozsah, vrátí buď 0x00 nebo 0xff, podle toho jestli je hodnota v mpt kladná nebo záporná.
+ * @return int At-tý segment v instanci mpt. Pokud je at mimo rozsah, vrátí buď 0x00 nebo 0xff, podle toho jestli je hodnota v mpt kladná nebo záporná.
  */
-char mpt_get_segment(const mpt *value, const size_t at);
+int mpt_get_segment(const mpt *value, const size_t at);
 
 /**
  * @brief Nastaví at-tý bit v instanci mpt na 0 pokud je bit_set roven nule, jinak na 1.
@@ -135,11 +135,11 @@ int mpt_is_negative(const mpt *value);
 int mpt_is_odd(const mpt *value);
 
 /**
- * @brief Vytvoří kopii zadané instance mpt, s nejmenším možným počtem segmentů potřebných k reprezentaci hodnoty v původní instanci orig.
+ * @brief Optimalizuje zadanou instanci mpt, aby měla co nejmenší možný počet segmentů potřebných k reprezentaci její hodnoty.
  * @param orig Instance mpt, která má být optimalizována.
- * @return mpt* Ukazatel na optimalizovanou instanci mpt, pokud se optimalizace povede, jinak NULL.
+ * @return int 1 pokud se optimalizace povede, 0 pokud ne
  */
-mpt *mpt_optimize(const mpt *orig);
+int mpt_optimize(mpt *orig);
 
 /**
  * @brief Funkce pro uvolnění struktury mpt z paměti.

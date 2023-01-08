@@ -81,8 +81,8 @@ void mpt_print_dec(const mpt *value) {
     EXIT_IF(!(str = vector_allocate(sizeof(char), NULL)));
 
     while (!mpt_is_zero(div)) {
-        mod = mpt_mod(div, ten);
         div_next = mpt_div(div, ten);
+        mod = mpt_mod_with_div(div, ten, div_next);
         mpt_replace(&div, &div_next);
 
         EXIT_IF(!mod || !div);
