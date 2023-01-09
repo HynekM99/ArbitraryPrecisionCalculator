@@ -46,14 +46,14 @@
 int shunt(const char *str, vector_type **rpn_str, stack_type **rpn_values);
 
 /**
- * @brief Ze zadaného RPN výrazu vypočítá a vytvoří výslednou instanci mpt.
- * @param dest Ukazatel na ukazatel na vytvořenou instanci mpt s výslednou hodnotou. 
+ * @brief Ze zadaného RPN výrazu vypočítá výslednou hodnotu a zapíše ji do instance mpt, na kterou ukazuje ukazatel 'dest'.
+ * @param dest Ukazatel na vytvořenou instanci mpt s výslednou hodnotou. 
  *             Při neúspěšném vyhodnocení bude dest ukazovat na NULL.
  * @param rpn_str Ukazatel na vektor, který obsahuje řetězec s RPN výrazem.
  * @param rpn_values Ukazatel na zásobník, který obsahuje ukazatele na instance mpt s hodnotami pro RPN.
  *                   V průběhu vyhodnocování bude ze zásobníku hodnoty odstraňovat.
  * @return int s hodnotou některého z maker pro úspěšnost výsledku.
  */
-int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack_type *rpn_values);
+int evaluate_rpn(mpt *dest, const vector_type *rpn_str, stack_type *rpn_values);
 
 #endif

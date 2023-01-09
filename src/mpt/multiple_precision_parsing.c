@@ -11,12 +11,12 @@
  */
 static int fill_set_bits_(mpt *target) {
     size_t i, bit_count;
-    if ((bit_count = mpt_bit_count(target)) == 0) {
+    if ((bit_count = mpt_bit_count(*target)) == 0) {
         return 0;
     }
     
     for (i = 0; i < bit_count; ++i) {
-        if (mpt_get_bit(target, bit_count - i - 1) == 1) {
+        if (mpt_get_bit(*target, bit_count - i - 1) == 1) {
             break;
         }
         if (!mpt_set_bit_to(target, bit_count - i - 1, 1)) {
@@ -81,138 +81,146 @@ int parse_char(const char c, const enum bases base) {
     return parser(c);
 }
 
-mpt *mpt_parse_str_bin(const char **str) {
-    int msb_set = 0, char_value = 0;
-    mpt *new, *shifted;
-    new = shifted = NULL;
-
-    #define EXIT_IF(v) \
+int mpt_parse_str_bin(mpt *dest, const char **str) {
+    int res = 1, msb_set, char_value;
+    mpt shifted;
+    shifted.list = NULL;
+    
+    #define EXIT_IF(v, e) \
         if (v) { \
-            mpt_deallocate(&new); \
+            res = e; \
             goto clean_and_exit; \
         }
 
-    EXIT_IF(!str || !*str);
+    EXIT_IF(!dest || !str || !*str, 0);
     
-    EXIT_IF(!(new = mpt_allocate(0)));
+    EXIT_IF(!mpt_init(dest, 0), 0);
 
-    msb_set = **str == '1';
+    EXIT_IF((char_value = parse_bin_char_(**str)) < 0, 0);
 
-    EXIT_IF((char_value = parse_bin_char_(**str)) < 0);
-    
+    msb_set = char_value == 1;
+
     while (char_value >= 0) {
-        shifted = mpt_shift(new, 1, 1);
-        EXIT_IF(!mpt_set_bit_to(shifted, 0, char_value));
-        mpt_replace(&new, &shifted);
-
+        EXIT_IF(!mpt_shift(&shifted, *dest, 1, 1), 0);
+        EXIT_IF(!mpt_set_bit_to(&shifted, 0, char_value), 0);
+        mpt_deinit(dest);
+        *dest = shifted;
+        shifted.list = NULL;
+        
         char_value = parse_bin_char_(*(++*str));
     }
 
     if (msb_set) {
-        EXIT_IF(!fill_set_bits_(new));
+        EXIT_IF(!fill_set_bits_(dest), 0);
     }
 
   clean_and_exit:
-    mpt_deallocate(&shifted);
+    mpt_deinit(&shifted);
 
-    return new;
+    if (!res) {
+        mpt_deinit(dest);
+    }
+
+    return res;
 
     #undef EXIT_IF
 }
 
-mpt *mpt_parse_str_dec(const char **str) {
-    int char_value;
-    mpt *new, *mpv_char, *multiplied, *added, *ten;
-    new = mpv_char = multiplied = added = ten = NULL;
+int mpt_parse_str_dec(mpt *dest, const char **str) {
+    int res = 1, char_value;
+    mpt mpv_char, mul, added, ten;
+    mpv_char.list = mul.list = added.list = ten.list = NULL;
 
-    #define EXIT_IF(v) \
+     #define EXIT_IF(v, e) \
         if (v) { \
-            mpt_deallocate(&new); \
+            res = e; \
             goto clean_and_exit; \
         }
 
-    EXIT_IF(!str || !*str);
+    EXIT_IF(!dest || !str || !*str, 0);
 
-    EXIT_IF(!(ten = mpt_allocate(10)));
-    EXIT_IF(!(new = mpt_allocate(0)));
+    EXIT_IF(!mpt_init(&ten, 10), 0);
+    EXIT_IF(!mpt_init(dest, 0), 0);
 
-    EXIT_IF((char_value = parse_dec_char_(**str)) < 0);
+    EXIT_IF((char_value = parse_dec_char_(**str)) < 0, 0);
 
     while (char_value >= 0) {
-        mpv_char = mpt_allocate(char_value);
-        multiplied = mpt_mul(new, ten);
-        added = mpt_add(multiplied, mpv_char);
-        mpt_deallocate(&mpv_char);
-        mpt_deallocate(&multiplied);
-        mpt_replace(&new, &added);
-
-        EXIT_IF(!new);
+        EXIT_IF(!mpt_init(&mpv_char, char_value), 0);
+        EXIT_IF(!mpt_mul(&mul, *dest, ten), 0);
+        EXIT_IF(!mpt_add(&added, mul, mpv_char), 0);
+        mpt_deinit(&mpv_char);
+        mpt_deinit(&mul);
+        mpt_replace(dest, &added);
 
         char_value = parse_dec_char_(*(++*str));
     }
 
   clean_and_exit:
-    mpt_deallocate(&ten);
-    mpt_deallocate(&added);
-    mpt_deallocate(&mpv_char);
-    mpt_deallocate(&multiplied);
+    mpt_deinit(&ten);
+    mpt_deinit(&added);
+    mpt_deinit(&mpv_char);
+    mpt_deinit(&mul);
 
-    return new;
+    if (!res) {
+        mpt_deinit(dest);
+    }
+
+    return res;
 
     #undef EXIT_IF
 }
 
-mpt *mpt_parse_str_hex(const char **str) {
-    int msb_set = 0, char_value;
-    mpt *new, *mpv_char, *shifted, *added;
-    new = mpv_char = shifted = added = NULL;
+int mpt_parse_str_hex(mpt *dest, const char **str) {
+    int res = 1, msb_set, char_value;
+    mpt mpv_char, shifted;
+    mpv_char.list = shifted.list = NULL;
 
-    #define EXIT_IF(v) \
+    #define EXIT_IF(v, e) \
         if (v) { \
-            mpt_deallocate(&new); \
+            res = e; \
             goto clean_and_exit; \
         }
 
-    EXIT_IF(!str || !*str);
+    EXIT_IF(!dest || !str || !*str, 0);
+    
+    EXIT_IF(!mpt_init(dest, 0), 0);
 
-    EXIT_IF(!(new = mpt_allocate(0)));
+    EXIT_IF((char_value = parse_hex_char_(**str)) < 0, 0);
 
-    EXIT_IF((char_value = parse_hex_char_(**str)) < 0)
-
-    msb_set = char_value >= 8;
+    msb_set = char_value == 1;
 
     while (char_value >= 0) {
-        mpv_char = mpt_allocate(char_value);
-        shifted = mpt_shift(new, BITS_IN_NIBBLE, 1);
-        added = mpt_add(shifted, mpv_char);
-        mpt_deallocate(&mpv_char);
-        mpt_deallocate(&shifted);
-        mpt_replace(&new, &added);
-
-        EXIT_IF(!new);
+        EXIT_IF(!mpt_init(&mpv_char, char_value), 0);
+        EXIT_IF(!mpt_shift(&shifted, *dest, BITS_IN_NIBBLE, 1), 0);
+        EXIT_IF(!mpt_add(dest, shifted, mpv_char), 0);
+        mpt_deinit(&mpv_char);
+        mpt_deinit(&shifted);
 
         char_value = parse_hex_char_(*(++*str));
     }
 
     if (msb_set) {
-        EXIT_IF(!fill_set_bits_(new));
+        EXIT_IF(!fill_set_bits_(dest), 0);
     }
 
   clean_and_exit:
-    mpt_deallocate(&mpv_char);
-    mpt_deallocate(&shifted);
-    mpt_deallocate(&added);
+    mpt_deinit(&mpv_char);
+    mpt_deinit(&shifted);
 
-    return new;
+    if (!res) {
+        mpt_deinit(dest);
+    }
+
+    return res;
 
     #undef EXIT_IF
 }
 
-mpt *mpt_parse_str(const char **str) {
+int mpt_parse_str(mpt *dest, const char **str) {
     str_parser parser = NULL;
 
     if (!str || !*str) {
-        return NULL;
+        return 0;
     }
 
     if (**str == '0' && *(*str + 1) == 'b') {
@@ -227,5 +235,5 @@ mpt *mpt_parse_str(const char **str) {
         parser = mpt_parse_str_dec;
     }
 
-    return parser ? parser(str) : NULL;
+    return parser(dest, str);
 }

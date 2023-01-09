@@ -7,11 +7,11 @@
 static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_str, stack_type *operator_stack, vector_type *values_vector);
 
 /**
- * \brief Obalovací funkce pro funkci pro uvolnění instance mpt z paměti.
- * \param poor Ukazatel na ukazatel na instanci mpt.
+ * \brief Obalovací funkce pro funkci deinicializace instance mpt.
+ * \param poor Ukazatel na instanci mpt.
  */
-static void mpt_deallocate_wrapper_(void *poor) {
-    mpt_deallocate(poor);
+static void mpt_deinit_wrapper_(void *poor) {
+    mpt_deinit(poor);
 }
 
 /** 
@@ -49,7 +49,7 @@ static int push_parsed_value_(const mpt *mpv, vector_type *rpn_str, vector_type 
     char value_symbol = RPN_VALUE_SYMBOL;
     return mpv && 
         vector_push_back(rpn_str, &value_symbol) && 
-        vector_push_back(values_vector, &mpv);
+        vector_push_back(values_vector, mpv);
 }
 
 /** 
@@ -118,16 +118,19 @@ static int push_operator_(const char operator, vector_type *rpn_str, stack_type 
  * \return int 1 pokud se hodnota úspěšně převedla a přidala, 0 pokud ne.
  */
 static int shunt_value_(const char **str, char *last_operator, vector_type *rpn_str, vector_type *values_vector) {
-    mpt *parsed_value;
-
+    mpt parsed_value;
+    parsed_value.list = NULL;
+    
     if (!last_operator) {
         return 0;
     }
 
-    parsed_value = mpt_parse_str(str);
+    if (!mpt_parse_str(&parsed_value, str)) {
+        return 0;
+    }
 
-    if (!push_parsed_value_(parsed_value, rpn_str, values_vector)) {
-        mpt_deallocate(&parsed_value);
+    if (!push_parsed_value_(&parsed_value, rpn_str, values_vector)) {
+        mpt_deinit(&parsed_value);
         return 0;
     }
 
@@ -305,13 +308,10 @@ static int shunt_char_(const char **str, char *last_operator, vector_type *rpn_s
 /** 
  * \brief Zjistí, o jaký error se jedná při neúspěšné matematické operaci s jedním operandem.
  * \param operator Znak operátoru matematické operace s jedním operandem.
- * \param a Ukazatel na instanci operandu matematické operace.
+ * \param a Instance operandu matematické operace.
  * \return int s hodnotou některého z maker pro matematický error.
  */
-static int get_math_error_un_func_(const char operator, const mpt *a) {
-    if (!a) {
-        return ERROR;
-    }
+static int get_math_error_un_func_(const char operator, const mpt a) {
     if (operator == '!' && mpt_is_negative(a)) {
         return FACTORIAL_OF_NEGATIVE;
     }
@@ -323,10 +323,10 @@ static int get_math_error_un_func_(const char operator, const mpt *a) {
  *        Funkce by měla obsahovat ještě parametr 'const mpt *a', nicméně by nebyl používán,
  *        takže je vynechán, aby překladač nehlásil varování.
  * \param operator Znak operátoru matematické operace se dvěma operandy.
- * \param b Ukazatel na instanci operandu matematické operace.
+ * \param b Instance operandu matematické operace.
  * \return int s hodnotou některého z maker pro matematický error.
  */
-static int get_math_error_bi_func_(const char operator, const mpt *b) {
+static int get_math_error_bi_func_(const char operator, const mpt b) {
     if ((operator == '/' || operator == '%') && mpt_is_zero(b)) {
         return DIV_BY_ZERO;
     }
@@ -344,8 +344,8 @@ static int get_math_error_bi_func_(const char operator, const mpt *b) {
 static int evaluate_rpn_char_(const char c, stack_type *rpn_values, stack_type *values_stack) {
     int res = RESULT_OK;
     const func_oper_type *function = NULL;
-    mpt *a, *b, *result;
-    a = b = result = NULL;
+    mpt a, b, result;
+    a.list = b.list = result.list = NULL;
 
     #define EXIT_IF(v, e) \
         if (v) { \
@@ -367,21 +367,21 @@ static int evaluate_rpn_char_(const char c, stack_type *rpn_values, stack_type *
 
     if (function->bi_handler) {
         EXIT_IF(!stack_pop(values_stack, &b) || !stack_pop(values_stack, &a), SYNTAX_ERROR);
-        EXIT_IF(!(result = function->bi_handler(a, b)), get_math_error_bi_func_(c, b));
+        EXIT_IF(!function->bi_handler(&result, a, b), get_math_error_bi_func_(c, b));
     }
     else if (function->un_handler) {
         EXIT_IF(!stack_pop(values_stack, &a), SYNTAX_ERROR);
-        EXIT_IF(!(result = function->un_handler(a)), get_math_error_un_func_(c, a));
+        EXIT_IF(!function->un_handler(&result, a), get_math_error_un_func_(c, a));
     }
     else {
         return ERROR;
     }
 
   clean_and_exit:
-    mpt_deallocate(&a);
-    mpt_deallocate(&b);
+    mpt_deinit(&a);
+    mpt_deinit(&b);
 
-    if (result && !stack_push(values_stack, &result)) {
+    if (res == RESULT_OK && !stack_push(values_stack, &result)) {
         return ERROR;
     }
     return res;
@@ -404,7 +404,7 @@ int shunt(const char *str, vector_type **rpn_str, stack_type **values) {
     EXIT_IF(!str || is_end_char_(*str) || !rpn_str || !values, ERROR);
 
     operator_stack = stack_allocate(get_operator_count_(str), sizeof(char), NULL);
-    values_vector = vector_allocate(sizeof(mpt *), mpt_deallocate_wrapper_);
+    values_vector = vector_allocate(sizeof(mpt), mpt_deinit_wrapper_);
     *rpn_str = vector_allocate(sizeof(char), NULL);
 
     EXIT_IF(!operator_stack || !*rpn_str || !values_vector, ERROR);
@@ -434,7 +434,7 @@ int shunt(const char *str, vector_type **rpn_str, stack_type **values) {
     #undef EXIT_IF
 }
 
-int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack_type *values) {
+int evaluate_rpn(mpt *dest, const vector_type *rpn_str, stack_type *values) {
     int res = RESULT_OK;
     char *c;
     size_t i;
@@ -448,7 +448,7 @@ int evaluate_rpn(mpt **dest, const vector_type *rpn_str, stack_type *values) {
 
     EXIT_IF(!dest || !rpn_str || !values, ERROR);
 
-    EXIT_IF(!(stack_values = stack_allocate(stack_item_count(values), values->item_size, mpt_deallocate_wrapper_)), ERROR);
+    EXIT_IF(!(stack_values = stack_allocate(stack_item_count(values), values->item_size, mpt_deinit_wrapper_)), ERROR);
 
     for (i = 0; i < vector_count(rpn_str); ++i) {
         EXIT_IF(!(c = (char *)vector_at(rpn_str, i)), ERROR);

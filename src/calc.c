@@ -133,11 +133,12 @@ void print_out(const enum bases out) {
  * @return int s hodnotou některého z maker pro úspěšnost výsledku (viz shunting_yard.h).
 */
 int evaluate_expression(const char *input, const enum bases *out) {
+    int res;
     int evaluation_res = EVALUATION_FAILURE;
     vector_type *rpn_str = NULL;
     stack_type *values = NULL;
-    mpt *result = NULL;
-    int res;
+    mpt result;
+    result.list = NULL;
 
     switch (res = shunt(input, &rpn_str, &values)) {
         case INVALID_SYMBOL: printf("Invalid command \"%s\"!\n", input); break;
@@ -166,7 +167,7 @@ int evaluate_expression(const char *input, const enum bases *out) {
   clean_and_exit:
     vector_deallocate(&rpn_str);
     stack_deallocate(&values);
-    mpt_deallocate(&result);
+    mpt_deinit(&result);
 
     return evaluation_res;
 }

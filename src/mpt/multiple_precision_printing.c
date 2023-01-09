@@ -10,7 +10,7 @@
  * \param nibble_pos Pozice nibblu.
  * \return char s hodnotou nibblu.
  */
-static char mpt_get_nibble_(const mpt *value, const size_t nibble_pos) {
+static char mpt_get_nibble_(const mpt value, const size_t nibble_pos) {
     char nibble = 0;
     size_t i, bit_pos;
     bit_pos = nibble_pos * BITS_IN_NIBBLE;
@@ -35,18 +35,15 @@ void str_print_reverse_(const vector_type *str) {
     }
 }
 
-void mpt_print_bin(const mpt *value) {
+void mpt_print_bin(const mpt value) {
     size_t i, bits;
     int msb;
 
-    if (!value) {
-        return;
-    }
-
-    msb = mpt_is_negative(value);
+    msb = mpt_get_msb(value);
 
     printf("0b%d", msb);
 
+    /* Ignoruj bity stejné jako MSB */
     bits = mpt_bit_count(value);
     for (i = 1; i < bits; ++i) {
         if (mpt_get_bit(value, bits - i - 1) != msb) {
@@ -59,36 +56,33 @@ void mpt_print_bin(const mpt *value) {
     }
 }
 
-void mpt_print_dec(const mpt *value) {
+void mpt_print_dec(const mpt value) {
     vector_type *str;
-    mpt *mod, *div, *div_next, *ten;
-    mod = div = div_next = ten = NULL;
-
+    mpt mod, div, div_next, ten;
+    mod.list = div.list = div_next.list = ten.list = NULL;
+    
     #define EXIT_IF(v) \
         if (v) { \
             goto clean_and_exit; \
         }
-
-    EXIT_IF(!value);
 
     if (mpt_is_zero(value) == 1) {
         printf("0");
         return;
     }
 
-    EXIT_IF(!(div = mpt_abs(value)));
-    EXIT_IF(!(ten = mpt_allocate(10)));
+    EXIT_IF(!mpt_abs(&div, value));
+    EXIT_IF(!mpt_init(&ten, 10));
     EXIT_IF(!(str = vector_allocate(sizeof(char), NULL)));
 
     while (!mpt_is_zero(div)) {
-        div_next = mpt_div(div, ten);
-        mod = mpt_mod_with_div(div, ten, div_next);
+        EXIT_IF(!mpt_div(&div_next, div, ten));
+        EXIT_IF(!mpt_mod_with_div(&mod, div, ten, div_next));
         mpt_replace(&div, &div_next);
 
-        EXIT_IF(!mod || !div);
-        EXIT_IF(!vector_push_back(str, vector_at(mod->list, 0)));
+        EXIT_IF(!vector_push_back(str, vector_at(mod.list, 0)));
 
-        mpt_deallocate(&mod);
+        mpt_deinit(&mod);
     }
     
     if (mpt_is_negative(value)) {
@@ -98,22 +92,18 @@ void mpt_print_dec(const mpt *value) {
 
   clean_and_exit:
     vector_deallocate(&str);
-    mpt_deallocate(&mod);
-    mpt_deallocate(&div_next);
-    mpt_deallocate(&div);
-    mpt_deallocate(&ten);
+    mpt_deinit(&mod);
+    mpt_deinit(&div_next);
+    mpt_deinit(&div);
+    mpt_deinit(&ten);
 
     #undef EXIT_IF
 }
 
-void mpt_print_hex(const mpt *value) {
+void mpt_print_hex(const mpt value) {
     int msb;
     size_t i, nibbles;
     char nibble = 0, to_leave_out;
-
-    if (!value) {
-        return;
-    }
 
     msb = mpt_get_msb(value);
     nibbles = mpt_bit_count(value) / BITS_IN_NIBBLE;
@@ -148,7 +138,7 @@ void mpt_print_hex(const mpt *value) {
     }
 }
 
-void mpt_print(const mpt *value, const enum bases base) {
+void mpt_print(const mpt value, const enum bases base) {
     mpt_printer printer;
 
     switch (base) {
