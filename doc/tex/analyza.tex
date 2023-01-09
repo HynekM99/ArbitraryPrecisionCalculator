@@ -43,4 +43,4 @@ Shunting yard umí převést infixovou formu výrazu na formu RPN, nedokáže al
 
 \subsection{Načítání výrazů ze vstupu}
 Vzhledem k tomu, že výraz může být libovolně dlouhý, číst ze vstupu statické množství znaků by bylo nevhodné.
-Namísto toho můžeme využít struktury typu vektor k postupnému načítání všech znaků až po znak ukončovací (nulový nebo '\textbackslash n').
+Namísto toho můžeme využít struktury typu vektor k postupnému načítání všech znaků až po znak ukončovací (nulový nebo '\textbackslash n'), přičemž každý znak převedeme funkcí \verb|tolower| na znak malý.
