@@ -15,7 +15,7 @@
 #define VECTOR_SIZE_MULT 2
 
 /** @brief Počáteční velikost vektoru. */
-#define VECTOR_INIT_SIZE 1
+#define VECTOR_INIT_SIZE 8
 
 /**
  * @brief Definice ukazatele na obecnou funkci, která umí uvolnit prvek uložený ve vektoru.

@@ -103,7 +103,7 @@ int mpt_abs(mpt *dest, const mpt value) {
 }
 
 int mpt_shift(mpt *dest, const mpt value, const size_t positions, const int shift_left) {
-    size_t i, j;
+    size_t i, j, bits_to_move;
 
     #define EXIT_IF(v) \
         if (v) { \
@@ -115,15 +115,19 @@ int mpt_shift(mpt *dest, const mpt value, const size_t positions, const int shif
 
     EXIT_IF(!mpt_init(dest, 0));
 
+    bits_to_move = mpt_bit_count(value) + mpt_bits_in_segment(value);
+
     if (shift_left) {
         i = 0;
         j = positions;
+
+        EXIT_IF(!vector_realloc(dest->list, bits_to_move / mpt_bits_in_segment(*dest)));
     } else {
         i = positions;
         j = 0;
     }
 
-    for (; i < mpt_bit_count(value) + mpt_bits_in_segment(value); ++i, ++j) {
+    for (; i < bits_to_move; ++i, ++j) {
         EXIT_IF(!mpt_set_bit_to(dest, j, mpt_get_bit(value, i)));
     }
 
@@ -187,15 +191,16 @@ int mpt_add(mpt *dest, const mpt a, const mpt b) {
         
     EXIT_IF(!dest);
 
-    EXIT_IF(!mpt_init(dest, 0));
-    EXIT_IF(!vector_clear(dest->list));
-
     if (mpt_bit_count(a) >= mpt_bit_count(b)) {
         segments = mpt_segment_count(a);
     } else {
         segments = mpt_segment_count(b);
     }
     ++segments;
+
+    EXIT_IF(!mpt_init(dest, 0));
+    EXIT_IF(!vector_realloc(dest->list, segments));
+    EXIT_IF(!vector_clear(dest->list));
 
     for (i = 0; i < segments; ++i) {
         segment_a = mpt_get_segment(a, i);
@@ -246,7 +251,7 @@ int mpt_mul(mpt *dest, const mpt a, const mpt b) {
         }
 
     EXIT_IF(!dest, 0);
-    
+
     EXIT_IF(!mpt_init(dest, 0), 0);
 
     if (mpt_is_zero(a) || mpt_is_zero(b)) {

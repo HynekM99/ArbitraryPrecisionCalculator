@@ -125,7 +125,7 @@ segment_type mpt_get_segment(const mpt value, const size_t at) {
 }
 
 int mpt_set_bit_to(mpt *value, const size_t at, const int bit_set) {
-    size_t segment_pos, bit_pos, to_add;
+    size_t segment_pos, to_add, bit_pos;
     segment_type *segment;
 
     segment_pos = mpt_get_segment_index_(*value, at);
@@ -154,16 +154,16 @@ int mpt_set_bit_to(mpt *value, const size_t at, const int bit_set) {
 }
 
 int mpt_get_bit(const mpt value, const size_t at) {
-    segment_type *segment;
+    segment_type segment;
     size_t bit_pos;
 
     if (at >= mpt_bit_count(value)) {
         return mpt_get_msb(value);
     }
-    segment = mpt_get_segment_ptr(value, mpt_get_segment_index_(value, at));
+    segment = mpt_get_segment(value, mpt_get_segment_index_(value, at));
     bit_pos = mpt_bit_pos_in_segment_(value, at);
 
-    return (*segment >> bit_pos) & 1;
+    return (segment >> bit_pos) & 1;
 }
 
 int mpt_get_msb(const mpt value) {
