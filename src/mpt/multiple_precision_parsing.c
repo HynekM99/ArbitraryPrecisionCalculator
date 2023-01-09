@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "mpt.h"
@@ -223,11 +224,11 @@ int mpt_parse_str(mpt *dest, const char **str) {
         return 0;
     }
 
-    if (**str == '0' && *(*str + 1) == 'b') {
+    if (**str == '0' && tolower(*(*str + 1)) == 'b') {
         parser = mpt_parse_str_bin;
         *str += 2;
     }
-    else if (**str == '0' && *(*str + 1) == 'x') {
+    else if (**str == '0' && tolower(*(*str + 1)) == 'x') {
         parser = mpt_parse_str_hex;
         *str += 2;
     }

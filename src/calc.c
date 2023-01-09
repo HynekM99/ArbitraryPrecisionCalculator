@@ -6,6 +6,7 @@
  * @date 2023-01-04
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +37,7 @@ static int is_end_char_(const char c) {
  * \param str Řetězec.
  * \return int 1 jestli je řetězec prázdný, jinak 0.
 */
-int str_empty_(const char *str) {
+static int str_empty_(const char *str) {
     if (!str) {
         return 1;
     }
@@ -48,6 +49,25 @@ int str_empty_(const char *str) {
     }
 
     return 1;
+}
+
+/**
+ * \brief Zjistí, jestli se řetězce shodují, bez rozlišování velkých a malých písmen.
+ * \param str1 První řetězec.
+ * \param str2 Druhý řetězec.
+ * \return int 1 jestli se řetězce shudují, jinak 0.
+ */
+static int streq_ignorecase_(char const *str1, char const *str2) {
+    if ((!str1 && str2) || (str1 && !str2)) {
+        return 0;
+    }
+
+    for (; !is_end_char_(*str1) && !is_end_char_(*str2); ++str1, ++str2) {
+        if (tolower(*str1) != tolower(*str2)) {
+            return 0;
+        }
+    }
+    return tolower(*str1) == tolower(*str2);
 }
 
 /** 
@@ -193,17 +213,18 @@ int evaluate_command(const char *input, enum bases *out) {
     if (str_empty_(input)) {
         return EVALUATION_SUCCESS;
     }
-    if (strcmp(input, "quit") == 0) {
+    if (streq_ignorecase_(input, "quit")) {
+        printf("quit\n");
         return QUIT_CODE;
     }
-    if (strcmp(input, "out") == 0) {
+    if (streq_ignorecase_(input, "out")) {
         print_out(*out);
         return EVALUATION_SUCCESS;
     }
 
-    SET_OUT_IF(strcmp(input, "bin") == 0, bin);
-    SET_OUT_IF(strcmp(input, "dec") == 0, dec);
-    SET_OUT_IF(strcmp(input, "hex") == 0, hex);
+    SET_OUT_IF(streq_ignorecase_(input, "bin"), bin);
+    SET_OUT_IF(streq_ignorecase_(input, "dec"), dec);
+    SET_OUT_IF(streq_ignorecase_(input, "hex"), hex);
 
     return evaluate_expression(input, out);
 
