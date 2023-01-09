@@ -151,7 +151,6 @@ int mpt_negate(mpt *dest, const mpt value) {
     EXIT_IF(!dest, 0);
 
     EXIT_IF(!mpt_init(&one, 1), 0);
-    EXIT_IF(!mpt_init(dest, 0), 0);
     EXIT_IF(!mpt_init(&negated, 0), 0);
 
     EXIT_IF(!vector_clear(negated.list), 0);
@@ -492,8 +491,6 @@ int mpt_factorial(mpt *dest, const mpt value) {
         }
 
     EXIT_IF(!dest, 0);
-
-    EXIT_IF(!mpt_init(dest, 0), 0);
 
     EXIT_IF(mpt_is_negative(value), 0);
 

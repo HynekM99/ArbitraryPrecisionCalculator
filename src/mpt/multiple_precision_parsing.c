@@ -103,9 +103,7 @@ int mpt_parse_str_bin(mpt *dest, const char **str) {
     while (char_value >= 0) {
         EXIT_IF(!mpt_shift(&shifted, *dest, 1, 1), 0);
         EXIT_IF(!mpt_set_bit_to(&shifted, 0, char_value), 0);
-        mpt_deinit(dest);
-        *dest = shifted;
-        shifted.list = NULL;
+        mpt_replace(dest, &shifted);
         
         char_value = parse_bin_char_(*(++*str));
     }
@@ -172,8 +170,8 @@ int mpt_parse_str_dec(mpt *dest, const char **str) {
 
 int mpt_parse_str_hex(mpt *dest, const char **str) {
     int res = 1, msb_set, char_value;
-    mpt mpv_char, shifted;
-    mpv_char.list = shifted.list = NULL;
+    mpt added, mpv_char, shifted;
+    added.list = mpv_char.list = shifted.list = NULL;
 
     #define EXIT_IF(v, e) \
         if (v) { \
@@ -187,14 +185,15 @@ int mpt_parse_str_hex(mpt *dest, const char **str) {
 
     EXIT_IF((char_value = parse_hex_char_(**str)) < 0, 0);
 
-    msb_set = char_value == 1;
+    msb_set = char_value >= 8;
 
     while (char_value >= 0) {
         EXIT_IF(!mpt_init(&mpv_char, char_value), 0);
         EXIT_IF(!mpt_shift(&shifted, *dest, BITS_IN_NIBBLE, 1), 0);
-        EXIT_IF(!mpt_add(dest, shifted, mpv_char), 0);
+        EXIT_IF(!mpt_add(&added, shifted, mpv_char), 0);
         mpt_deinit(&mpv_char);
         mpt_deinit(&shifted);
+        mpt_replace(dest, &added);
 
         char_value = parse_hex_char_(*(++*str));
     }
@@ -206,6 +205,7 @@ int mpt_parse_str_hex(mpt *dest, const char **str) {
   clean_and_exit:
     mpt_deinit(&mpv_char);
     mpt_deinit(&shifted);
+    mpt_deinit(&added);
 
     if (!res) {
         mpt_deinit(dest);
