@@ -3,11 +3,12 @@ V programu jsou často využívány datové struktury zásobník (struktura \ver
 V průběhu programu bude také nutné převést data z vektoru do zásobníku. Funkce převedení je v souboru \verb|conversion.c/.h|. Vzhledem k tomu, že se jedná o běžné datové struktury, nebudeme je podrobně popisovat. Zmíněné soubory jsou umístěny samostatně ve složce \verb|data_structures|. 
 
 \subsection{Struktura pro reprezentaci čísel}\label{subsection:mpt}
-Struktura pro reprezentaci `nekonečně' velkých čísel (struktura \verb|mpt|, soubory \\ \verb|multiple_precision_type.c/.h|) je pouze obalovací strukturou pro vektor integerů (dále označovány jako segmenty), jehož velikost se dynamicky realokuje podle potřeby.
+Struktura pro reprezentaci `nekonečně' velkých čísel (struktura \verb|mpt|, soubory \\ \verb|multiple_precision_type.c/.h|) je pouze obalovací strukturou pro vektor prvků typu \\ \verb|unsigned int| (dále označovány jako segmenty), jehož velikost se dynamicky realokuje podle potřeby.
 
 Veškeré soubory týkající se struktury \verb|mpt| a práce s ní se nacházejí ve stejnojmenné složce \verb|mpt|.
 
-Při vytvoření instance \verb|mpt| (funkcí \verb|mpt_allocate|) do vektoru přidáme jediný segment se zadanou číselnou hodnotou v rozsahu datového typu \verb|int|. Pro získání vyšších, resp.~nižších, čísel je zapotřebí přidat do vektoru další segmenty a v nich nastavit příslušné bity (funkce \verb|mpt_set_bit_to|). Každý $i$-tý prvek ve vektoru odpovídá $i$-tému segmentu čísla. Nultý segment má váhu nejmenší a s každým dalším segmentem se váha zvyšuje.
+Instance \verb|mpt| lze vytvořit na haldě funkcí \verb|mpt_allocate|, nebo na zásobníku, kde ji poté inicializujeme funkcí \verb|mpt_init|.
+Takto vytvořené instance \verb|mpt| budou ve vektoru mít jediný segment se zadanou číselnou hodnotou v rozsahu datového typu \verb|int|. Pro získání vyšších, resp.~nižších, čísel je zapotřebí přidat do vektoru další segmenty a v nich nastavit příslušné bity (funkce \verb|mpt_set_bit_to|). Každý $i$-tý prvek ve vektoru odpovídá $i$-tému segmentu čísla. Nultý segment má váhu nejmenší a s každým dalším segmentem se váha zvyšuje.
 
 Je nutné počítat s tím, že čísla reprezentujeme dvojkovým doplňkem. \\Např.~číslo $2^{32}$\verb| = |0b11\dots 11 se sice vejde do jednoho segmentu, ale ve dvojkovém doplňku je rovno \verb|-1|, a proto je nutné přidat navíc segment samých nul, aby hodnota odpovídala $2^{32}$.
 
@@ -16,7 +17,7 @@ Vezmeme-li v potaz, že bity indexujeme v rozsahu \verb|size_t|, a budeme-li př
 \subsection{Matematické operace s MPT}\label{subsection:mpt_operace}
 Funkce pro matematické operace s instancemi \verb|mpt| se nachází v souborech \\\verb|multiple_precision_operations.c/.h|.
 
-U všech operací je výsledná hodnota vrácena odpovídající funkcí jako ukazatel na novou instanci \verb|mpt|, nebo NULL když nastane chyba nebo nelze operaci provést se zadanými hodnotami. Vstupní operandy zůstávají nezměněné. Na konci každé operace by měla výsledná hodnota vždy být optimalizovaná funkcí \verb|mpt_optimize| tak, aby měla co nejmenší počet segmentů. 
+U všech operací je výsledná hodnota zapsána odpovídající funkcí do instance, na kterou ukazuje ukazatel v prvním parametru. Samotné funkce vracejí \verb|int| 1 nebo 0 když nastane chyba nebo nelze operaci provést se zadanými hodnotami. Vstupní operandy zůstávají nezměněné. Na konci každé operace by měla výsledná hodnota vždy být optimalizovaná funkcí \verb|mpt_optimize| tak, aby měla co nejmenší počet segmentů. 
 
 Pro některé operace bylo zapotřebí vytvořit navíc operace absolutní hodnoty (funkce \\ \verb|mpt_abs|) a bitového posunu (funkce \verb|mpt_shift|).
 
@@ -48,7 +49,6 @@ Postup dělení je ilustrován na obrázku~\ref{fig:binary_division}.
     \includegraphics[width=0.5\textwidth]{binary_division}
     \caption{Ukázka postupu dělení 0b010101\textdiv0b011}\label{fig:binary_division}
 \end{figure}
-\newpage
 
 Mocnění základu exponentem má v binární soustavě elegantní řešení~\cite{bib:power} popsané pseudokódem~\ref{alg:power}.
 
@@ -76,6 +76,7 @@ Mocnění základu exponentem má v binární soustavě elegantní řešení~\ci
 }
 \end{algorithmic}
 \end{algorithm}
+\newpage
 
 \subsection{Převod řetězce na MPT}
 Funkce pro převody řetězců na \verb|mpt| se nachází v souborech \\ \verb|multiple_precision_parsing.c/.h|.
@@ -128,7 +129,6 @@ Pro výpis v dekadické soustavě si nejprve vytvoříme absolutní hodnotu zada
 
 \subsection{Operátory}
 Podporované operátory a k nim přidružené obslužné funkce, precedence a asociativity jsou ve struktuře \verb|func_oper_type| v souborech \verb|operators.c/.h|, spolu s funkcí \verb|get_func_operator| pro získání struktury \verb|func_oper_type| s daty, odpovídajícími požadovanému znaku operátoru.
-\newpage
 
 \subsection{Shunting yard}
 Funkce pro zpracování zadaných výrazů se nachází v souborech \verb|shunting_yard.c/.h|.
